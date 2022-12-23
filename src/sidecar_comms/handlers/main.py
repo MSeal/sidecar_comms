@@ -1,0 +1,9 @@
+from IPython import get_ipython
+
+
+def get_kernel_variables():
+    """Returns a list of variables in the kernel."""
+    ipython = get_ipython()
+    variables = dict(ipython.user_ns)
+    variable_types = {name: str(type(value)) for name, value in variables.items()}
+    return variable_types

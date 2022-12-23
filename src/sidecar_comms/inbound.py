@@ -2,27 +2,23 @@
 Comm target registration and message handling for inbound messages.
 (Sidecar -> kernel)
 """
-from IPython import get_ipython
 
-from sidecar_comms.models import CommMessage
+
+from sidecar_comms.handlers.main import get_kernel_variables
 
 
 def inbound_comm(comm, open_msg):
+    """Handles messages from the sidecar."""
+
     @comm.on_msg
     def _recv(msg):
         data = msg["content"]["data"]
+        # echo for debugging
+        comm.send({"status": "received", "data": data})
 
         # TODO: pydantic discriminators for message types->handlers
         if data.get("msg") == "get_kernel_variables":
-            msg = CommMessage(
-                body={"data": dict(get_ipython().user_ns)},
-                comm_id=comm.id,
-            )
-            comm.send(msg.dict())
+            msg = get_kernel_variables()
+            comm.send({"data": msg})
 
-    # registration acknowledgement
-    msg = CommMessage(
-        body={"data": "comm registered"},
-        comm_id=comm.id,
-    )
-    comm.send(msg.dict())
+    comm.send({"status": "connected", "source": "inbound_comm"})
