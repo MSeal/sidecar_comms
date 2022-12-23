@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "sidecar_comms"
+version = "0.1.0"
+description = "Comms package for messaging with kernel sidecar"
+authors = ["Dave Shoup <dave.shoup@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+homepage = "https://app.noteable.io/"
+repository = "https://github.com/noteable-io/sidecar_comms"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+ipykernel = "^6.19.4"
+pydantic = "^1.10.2"
+ipywidgets = "^8.0.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+flake8 = "^6.0.0"
+black = "^22.12.0"
+isort = "^5.11.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+
+[tool.coverage.run]
+branch = false
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = ["if self.debug:",
+                 "pragma: no cover",
+                 "raise AssertionError",
+                 "raise NotImplementedError",
+                 "if __name__ == '__main__':"]
+ignore_errors = true
+omit = []
