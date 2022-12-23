@@ -6,12 +6,13 @@ from functools import lru_cache
 from typing import Optional
 
 from ipykernel.comm import Comm
+from traitlets import Any, HasTraits
 
-from sidecar_comms.models import BaseWidget, CommMessage
+from sidecar_comms.models import CommMessage
 
 
-class SidecarComm(Comm):
-    value = None
+class SidecarComm(Comm, HasTraits):
+    value = Any().tag(sync=True)
 
     def send(
         self,
@@ -28,13 +29,9 @@ class SidecarComm(Comm):
         )
         super().send(data=msg.dict())
 
-    def _recv(self, msg):
+    def update_value(self, msg):
         data = msg["content"]["data"]
         self.value = data.get("value")
-
-    def on_msg(self, func):
-        # similar to @comm.on_msg callback registration
-        super().on_msg(self._recv)
 
 
 class CommManager:
@@ -49,10 +46,12 @@ class CommManager:
         comm = SidecarComm(target_name=target_name, data=data)
         self.comms[target_name] = comm
         comm.send(body={"request": target_name})
-        # TODO: figure out why comm.value doesn't update without this
-        widget = BaseWidget()
-        widget.comm = comm
-        return widget
+
+        # if a message with {"value": X} is sent to this comm,
+        # update the comm's value attribute
+        comm.on_msg(comm.update_value)
+
+        return comm
 
 
 @lru_cache
