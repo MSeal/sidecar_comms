@@ -1,5 +1,5 @@
 import enum
-from typing import Any, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ class SidecarRequestType(enum.Enum):
 
 class CommMessageBody(BaseModel):
     request: Optional[SidecarRequestType]
-    data: Optional[dict[str, Any]]
+    data: Optional[Dict[str, Any]]
 
     class Config:
         use_enum_values = True

@@ -9,19 +9,28 @@ homepage = "https://app.noteable.io/"
 repository = "https://github.com/noteable-io/sidecar_comms"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.8"
 ipykernel = "^6.19.4"
 pydantic = "^1.10.2"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
-flake8 = "^6.0.0"
 black = "^22.12.0"
+flake8 = "^5.0.4"
+flake8-docstrings = "^1.6.0"
 isort = "^5.11.3"
+nox = "^2022.11.21"
+nox-poetry = "^1.0.2"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
+pytest-mock = "^3.10.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+line_length = 100
 
 [tool.black]
 line-length = 100
