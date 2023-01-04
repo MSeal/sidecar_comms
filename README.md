@@ -23,18 +23,6 @@ Enabling more flexible comm paths between the kernel and the kernel sidecar.
 
 Python 3.8+
 
-## Installation
-
-### Poetry
-
-```shell
-poetry add dx
-```
-
-### Pip
-```shell
-pip install dx
-```
 
 ## Usage
 ```python
