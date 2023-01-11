@@ -78,7 +78,7 @@ class FormCell:
 
 class DatetimePicker(FormCell):
     def __init__(self, **kwargs):
-        super().__init__(type="datetime_picker", **kwargs)
+        super().__init__(type="datetime", **kwargs)
 
 
 class Dropdown(FormCell):
@@ -101,9 +101,9 @@ class IntSlider(FormCell):
 
 class MultiDropdown(Dropdown):
     def __init__(self, **kwargs):
-        super().__init__(type="multi_dropdown", **kwargs)
+        super().__init__(type="multiselect", **kwargs)
 
 
 class TextInput(FormCell):
     def __init__(self, **kwargs):
-        super().__init__(type="text_input", **kwargs)
+        super().__init__(type="text", **kwargs)
