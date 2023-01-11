@@ -19,6 +19,6 @@ def inbound_comm(comm, open_msg):
         # TODO: pydantic discriminators for message types->handlers
         if data.get("msg") == "get_kernel_variables":
             msg = get_kernel_variables()
-            comm.send({"data": msg})
+            comm.send(msg)
 
-    comm.send({"status": "connected", "source": "inbound_comm"})
+    comm.send({"status": "connected", "source": "sidecar_comms.inbound"})
