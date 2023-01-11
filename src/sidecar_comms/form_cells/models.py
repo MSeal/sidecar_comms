@@ -1,17 +1,17 @@
+from datetime import datetime, timezone
 from typing import Any, List, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DatetimeModel(BaseModel):
     input_type: Literal["datetime"] = "datetime"
-    value: str
-    # TODO: ISO validation?
+    value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class DropdownModel(BaseModel):
     input_type: Literal["dropdown"] = "dropdown"
-    value: str
+    value: str = ""
     options: List[Any]
 
 
@@ -25,12 +25,12 @@ class SliderModel(BaseModel):
 
 class MultiselectModel(BaseModel):
     input_type: Literal["multiselect"] = "multiselect"
-    value: List[str]
+    value: List[str] = Field(default_factory=list)
     options: List[Any]
 
 
 class TextModel(BaseModel):
     input_type: Literal["text"] = "text"
-    value: str
+    value: str = ""
     min_length: int = 0
     max_length: int = 1000
