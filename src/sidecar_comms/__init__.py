@@ -1,3 +1,4 @@
+from .form_cells import *
 from .inbound import *
 from .models import *
 from .outbound import *
