@@ -4,6 +4,7 @@ from pydantic import parse_obj_as
 from traitlets import HasTraits, Int, Unicode
 
 from sidecar_comms.form_cells import models
+from sidecar_comms.outbound import comm_manager
 
 FormCellModel = Union[
     models.DatetimePickerModel,
@@ -19,11 +20,15 @@ class FormCell:
         self._type = type
         self._parent_model = parse_obj_as(FormCellModel, {"type": self._type, **kwargs})
         self._parent_traitlet = self._setup_traitlet()
+        self._comm = self._setup_comm()
 
     def __repr__(self):
         cell_name = self._parent_model.__class__.__name__.replace("Model", "")
         props = ", ".join(f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "type")
         return f"<{cell_name} {props}>"
+
+    def _setup_comm(self):
+        return comm_manager().open_comm("form_cells")
 
     def _setup_traitlet(self):
         traitlet = HasTraits()
@@ -54,7 +59,7 @@ class FormCell:
         self._parent_traitlet.value = value
 
     def _sync_frontend(self, change: dict):
-        print(f"send sidecar via comm_msg: {change=}")
+        self._comm.send(data=change)
 
 
 # --- Specific models ---
