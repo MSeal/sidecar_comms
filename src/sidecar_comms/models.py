@@ -24,3 +24,4 @@ class CommMessage(BaseModel):
     body: CommMessageBody = Field(default_factory=CommMessageBody)
     comm_id: Optional[str] = None
     target_name: Optional[str] = None
+    handler: Optional[str]
