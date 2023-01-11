@@ -23,9 +23,8 @@ class FormCell:
         self._comm = self._setup_comm()
 
     def __repr__(self):
-        cell_name = self._parent_model.__class__.__name__.replace("Model", "")
-        props = ", ".join(f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "type")
-        return f"<{cell_name} {props}>"
+        props = ", ".join(f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "input_type")
+        return f"<{self.__class__.__name__} {props}>"
 
     def _setup_comm(self):
         return comm_manager().open_comm("form_cells")
