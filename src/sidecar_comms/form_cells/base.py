@@ -7,11 +7,11 @@ from sidecar_comms.form_cells import models
 from sidecar_comms.outbound import comm_manager
 
 FormCellModel = Union[
-    models.DatetimePickerModel,
+    models.DatetimeModel,
     models.DropdownModel,
     models.SliderModel,
-    models.MultiDropdownModel,
-    models.TextInputModel,
+    models.MultiselectModel,
+    models.TextModel,
 ]
 
 
@@ -76,7 +76,7 @@ class FormCell:
 # --- Specific models ---
 
 
-class DatetimePicker(FormCell):
+class Datetime(FormCell):
     def __init__(self, **kwargs):
         super().__init__(type="datetime", **kwargs)
 
@@ -94,16 +94,16 @@ class Dropdown(FormCell):
         self._parent_model.options = value
 
 
-class IntSlider(FormCell):
+class Slider(FormCell):
     def __init__(self, **kwargs):
         super().__init__(type="slider", **kwargs)
 
 
-class MultiDropdown(Dropdown):
+class Multiselect(Dropdown):
     def __init__(self, **kwargs):
         super().__init__(type="multiselect", **kwargs)
 
 
-class TextInput(FormCell):
+class Text(FormCell):
     def __init__(self, **kwargs):
         super().__init__(type="text", **kwargs)

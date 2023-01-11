@@ -3,7 +3,7 @@ from typing import Any, List, Literal
 from pydantic import BaseModel
 
 
-class DatetimePickerModel(BaseModel):
+class DatetimeModel(BaseModel):
     input_type: Literal["datetime"] = "datetime"
     value: str
     # TODO: ISO validation?
@@ -23,13 +23,13 @@ class SliderModel(BaseModel):
     step: int = 1
 
 
-class MultiDropdownModel(BaseModel):
+class MultiselectModel(BaseModel):
     input_type: Literal["multiselect"] = "multiselect"
     value: List[str]
     options: List[Any]
 
 
-class TextInputModel(BaseModel):
+class TextModel(BaseModel):
     input_type: Literal["text"] = "text"
     value: str
     min_length: int = 0
