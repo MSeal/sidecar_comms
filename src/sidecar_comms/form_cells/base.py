@@ -59,6 +59,8 @@ class FormCell:
         self._parent_traitlet.value = value
 
     def _sync_frontend(self, change: dict):
+        # remove 'owner' since comms can't serialize traitlet objects
+        change.pop("owner", None)
         self._comm.send(data=change)
 
 
