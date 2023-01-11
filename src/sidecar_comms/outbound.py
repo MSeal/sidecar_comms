@@ -37,7 +37,11 @@ class SidecarComm(Comm, HasTraits):
 class CommManager:
     comms = {}
 
-    def open_comm(self, target_name: str, data: Optional[dict] = None) -> None:
+    def open_comm(
+        self,
+        target_name: str,
+        data: Optional[dict] = None,
+    ) -> SidecarComm:
         """
         Creates a SidecarComm and sends a message to the sidecar for registration.
         This will allow values to be sent back here to the comm
