@@ -8,6 +8,6 @@ def get_kernel_variables():
     variable_types = {name: str(type(value)) for name, value in variables.items()}
     return {
         "data": variable_types,
-        "source": "sidecar_comms.inbound",
+        "source": "sidecar_comms",
         "handler": "get_kernel_variables",
     }

@@ -21,4 +21,4 @@ def inbound_comm(comm, open_msg):
             msg = get_kernel_variables()
             comm.send(msg)
 
-    comm.send({"status": "connected", "source": "sidecar_comms.inbound"})
+    comm.send({"status": "connected", "source": "sidecar_comms"})
