@@ -43,7 +43,7 @@ class FormCell:
                 traits_to_add[name] = Int()
 
         traitlet.add_traits(**traits_to_add)
-        traitlet.observe(self._sync_frontend, type="change")
+        traitlet.observe(self._sync_sidecar, type="change")
         return traitlet
 
     def observe(self, fn: Callable, **kwargs):
@@ -58,30 +58,19 @@ class FormCell:
         self._parent_model.value = value
         self._parent_traitlet.value = value
 
-    def _sync_frontend(self, change: dict):
+    def _sync_sidecar(self, change: dict):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
         # remove 'owner' since comms can't serialize traitlet objects
-        data = {k: v for k, v in change if k != "owner"}
+        data = {k: v for k, v in change.items() if k != "owner"}
         data["id"] = id(self)
-        self._comm.send(
-            body={
-                "data": data,
-                "handler": "update_form_cell",
-                "request": "form_cells",
-            }
-        )
+        self._comm.send(handler="update_form_cell", body={"data": data})
 
     def _ipython_display_(self):
-        """Send a message to the sidecar instead of displaying the form cell directly."""
+        """Send a message to the sidecar and print the form cell repr."""
         data = self._parent_model.dict()
         data["id"] = id(self)
-        self._comm.send(
-            body={
-                "data": data,
-                "handler": "display_form_cell",
-                "request": "form_cells",
-            }
-        )
+        self._comm.send(handler="display_form_cell", body={"data": data})
+        print(self.__repr__())
 
 
 # --- Specific models ---
@@ -107,7 +96,7 @@ class Dropdown(FormCell):
 
 class IntSlider(FormCell):
     def __init__(self, **kwargs):
-        super().__init__(type="int_slider", **kwargs)
+        super().__init__(type="slider", **kwargs)
 
 
 class MultiDropdown(Dropdown):
