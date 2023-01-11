@@ -23,7 +23,9 @@ class FormCell:
         self._comm = self._setup_comm()
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "input_type")
+        props = ", ".join(
+            f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "input_type"
+        )
         return f"<{self.__class__.__name__} {props}>"
 
     def _setup_comm(self):
@@ -91,11 +93,39 @@ class Dropdown(FormCell):
     @options.setter
     def options(self, value):
         self._parent_model.options = value
+        self._parent_traitlet.options = value
 
 
 class Slider(FormCell):
     def __init__(self, **kwargs):
         super().__init__(type="slider", **kwargs)
+
+    @property
+    def min(self):
+        return self._parent_model.min
+
+    @min.setter
+    def min(self, value):
+        self._parent_model.min = value
+        self._parent_traitlet.min = value
+
+    @property
+    def max(self):
+        return self._parent_model.max
+
+    @max.setter
+    def max(self, value):
+        self._parent_model.max = value
+        self._parent_traitlet.max = value
+
+    @property
+    def step(self):
+        return self._parent_model.step
+
+    @step.setter
+    def step(self, value):
+        self._parent_model.step = value
+        self._parent_traitlet.step = value
 
 
 class Multiselect(Dropdown):
