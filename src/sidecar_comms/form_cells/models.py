@@ -15,8 +15,8 @@ class DropdownModel(BaseModel):
     options: List[Any]
 
 
-class IntSliderModel(BaseModel):
-    type: Literal["int_slider"] = "int_slider"
+class SliderModel(BaseModel):
+    type: Literal["slider"] = "slider"
     value: int = 0
     min: int = 0
     max: int = 10

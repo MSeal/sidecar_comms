@@ -9,7 +9,7 @@ from sidecar_comms.outbound import comm_manager
 FormCellModel = Union[
     models.DatetimePickerModel,
     models.DropdownModel,
-    models.IntSliderModel,
+    models.SliderModel,
     models.MultiDropdownModel,
     models.TextInputModel,
 ]
