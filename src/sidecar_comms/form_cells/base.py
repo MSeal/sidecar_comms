@@ -18,7 +18,7 @@ FormCellModel = Union[
 class FormCell:
     def __init__(self, type: str, **kwargs):
         self._type = type
-        self._parent_model = parse_obj_as(FormCellModel, {"type": self._type, **kwargs})
+        self._parent_model = parse_obj_as(FormCellModel, {"input_type": self._type, **kwargs})
         self._parent_traitlet = self._setup_traitlet()
         self._comm = self._setup_comm()
 
