@@ -59,9 +59,29 @@ class FormCell:
         self._parent_traitlet.value = value
 
     def _sync_frontend(self, change: dict):
+        """Send a comm_msg to the sidecar to update the form cell metadata."""
         # remove 'owner' since comms can't serialize traitlet objects
-        change.pop("owner", None)
-        self._comm.send(data=change)
+        data = {k: v for k, v in change if k != "owner"}
+        data["id"] = id(self)
+        self._comm.send(
+            body={
+                "data": data,
+                "handler": "update_form_cell",
+                "request": "form_cells",
+            }
+        )
+
+    def _ipython_display_(self):
+        """Send a message to the sidecar instead of displaying the form cell directly."""
+        data = self._parent_model.dict()
+        data["id"] = id(self)
+        self._comm.send(
+            body={
+                "data": data,
+                "handler": "display_form_cell",
+                "request": "form_cells",
+            }
+        )
 
 
 # --- Specific models ---
