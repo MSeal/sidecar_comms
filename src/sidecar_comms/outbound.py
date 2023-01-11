@@ -43,6 +43,9 @@ class CommManager:
         This will allow values to be sent back here to the comm
         and be accessed via comm.value.
         """
+        if target_name in self.comms:
+            return self.comms[target_name]
+
         comm = SidecarComm(target_name=target_name, data=data)
         self.comms[target_name] = comm
         comm.send(body={"request": target_name})
