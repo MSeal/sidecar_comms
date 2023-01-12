@@ -1,6 +1,6 @@
 """
  - This is going to move into its own package, here for now to speed up development of Form cells
- - Does not observe changes to mutable objects (model.list_thing.append()), will plan to try and 
+ - Does not observe changes to mutable objects (model.list_thing.append()), will plan to try and
    add support for that but it's a big task. See following issues and links:
    - Pydantic validate types in mutable lists: https://github.com/pydantic/pydantic/issues/496
    - Traitlets observe dict change: https://github.com/ipython/traitlets/issues/495
