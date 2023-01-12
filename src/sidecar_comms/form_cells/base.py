@@ -18,6 +18,7 @@ class FormCellBase(ObservableModel):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
+        self.observe(self._sync_sidecar)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude=["id"]))
