@@ -28,9 +28,10 @@ model
 """
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Union
 
 from pydantic import Field, PrivateAttr
+from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
 from sidecar_comms.outbound import comm_manager
@@ -54,6 +55,7 @@ class FormCellBase(ObservableModel):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
+        self.observe(self._sync_sidecar)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude=["id"]))
