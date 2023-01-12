@@ -34,7 +34,7 @@ from pydantic import Field, PrivateAttr
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
-from sidecar_comms.outbound import comm_manager
+from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
 
@@ -48,7 +48,7 @@ class FormCellBase(ObservableModel):
        that the sidecar will create a cell metadata delta that switches the cell type
     """
 
-    _comm: PrivateAttr
+    _comm: SidecarComm = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
 
     def __init__(self, **data):
