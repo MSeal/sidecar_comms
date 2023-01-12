@@ -5,7 +5,7 @@ a cell metadata delta is pushed to the sidecar and sidecar sends the info on to 
 over Comm.
 
 These models here represent different types of frontend form cells. A Datetime object in
-this file represents a date time picker form cell widget on the frontend. 
+this file represents a date time picker form cell widget on the frontend.
 
 The backend form cell objects have their state updated when frontend changes (user slides
 a slider or fills out a text input) through the same delta to sidecar -> sidecar comm to kernel
