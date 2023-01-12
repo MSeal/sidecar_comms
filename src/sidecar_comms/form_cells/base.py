@@ -30,7 +30,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Union
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -59,7 +59,7 @@ class FormCellBase(ObservableModel):
         self.observe(self._sync_sidecar)
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude=["id"]))
+        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}))
         return f"<{self.__class__.__name__} {props}>"
 
     def _sync_sidecar(self, change: Change):
@@ -78,7 +78,19 @@ class FormCellBase(ObservableModel):
 # --- Specific models ---
 class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
-    value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    value: str = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @validator("value", pre=True, always=True)
+    def validate_value(cls, value):
+        """Make sure value is a valid datetime string in isoformat"""
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        if isinstance(value, datetime):
+            value = value.strftime("%Y-%m-%dT%H:%M")
+        return value
+
+    class Config:
+        validate_assignment = True
 
 
 class Dropdown(FormCellBase):
