@@ -1,138 +1,78 @@
-from typing import Callable, Union
+import uuid
+from datetime import datetime, timezone
+from typing import Annotated, Any, Dict, List, Literal, Union
 
-from pydantic import parse_obj_as
-from traitlets import HasTraits, Int, Unicode
+from pydantic import Field, PrivateAttr
 
-from sidecar_comms.form_cells import models
+from sidecar_comms.form_cells.observable import Change, ObservableModel
 from sidecar_comms.outbound import comm_manager
 
-FormCellModel = Union[
-    models.DatetimeModel,
-    models.DropdownModel,
-    models.SliderModel,
-    models.MultiselectModel,
-    models.TextModel,
-]
+FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
 
 
-class FormCell:
-    def __init__(self, type: str, **kwargs):
-        self._type = type
-        self._parent_model = parse_obj_as(FormCellModel, {"input_type": self._type, **kwargs})
-        self._parent_traitlet = self._setup_traitlet()
-        self._comm = self._setup_comm()
+class FormCellBase(ObservableModel):
+    _comm: PrivateAttr
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._comm = comm_manager().open_comm("form_cells")
+        FORM_CELL_CACHE[self.id] = self
 
     def __repr__(self):
-        props = ", ".join(
-            f"{k}={v}" for k, v in self._parent_model.dict().items() if k != "input_type"
-        )
+        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude=["id"]))
         return f"<{self.__class__.__name__} {props}>"
 
-    def _setup_comm(self):
-        return comm_manager().open_comm("form_cells")
-
-    def _setup_traitlet(self):
-        traitlet = HasTraits()
-
-        traits_to_add = {}
-        for name, d in self._parent_model.schema()["properties"].items():
-            if name == "type":
-                continue
-            if d["type"] == "string":
-                traits_to_add[name] = Unicode()
-            elif d["type"] == "integer":
-                traits_to_add[name] = Int()
-
-        traitlet.add_traits(**traits_to_add)
-        traitlet.observe(self._sync_sidecar, type="change")
-        return traitlet
-
-    def observe(self, fn: Callable, **kwargs):
-        self._parent_traitlet.observe(fn, **kwargs)
-
-    @property
-    def value(self):
-        return self._parent_model.value
-
-    @value.setter
-    def value(self, value):
-        self._parent_model.value = value
-        self._parent_traitlet.value = value
-
-    def _sync_sidecar(self, change: dict):
+    def _sync_sidecar(self, change: Change):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
-        # remove 'owner' since comms can't serialize traitlet objects
-        data = {k: v for k, v in change.items() if k != "owner"}
-        data["id"] = id(self)
-        self._comm.send(handler="update_form_cell", body={"data": data})
+        self._comm.send(handler="update_form_cell", body={"data": change.dict()})
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
-        data = self._parent_model.dict()
-        data["id"] = id(self)
-        self._comm.send(handler="display_form_cell", body={"data": data})
+        self._comm.send(handler="display_form_cell", body={"data": self.dict()})
         print(self.__repr__())
 
 
 # --- Specific models ---
+class Datetime(FormCellBase):
+    input_type: Literal["datetime"] = "datetime"
+    value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class Datetime(FormCell):
-    def __init__(self, **kwargs):
-        super().__init__(type="datetime", **kwargs)
+class Dropdown(FormCellBase):
+    input_type: Literal["dropdown"] = "dropdown"
+    value: str = ""
+    options: List[Any]
 
 
-class Dropdown(FormCell):
-    def __init__(self, **kwargs):
-        super().__init__(type="dropdown", **kwargs)
-
-    @property
-    def options(self):
-        return self._parent_model.options
-
-    @options.setter
-    def options(self, value):
-        self._parent_model.options = value
-        self._parent_traitlet.options = value
+class Slider(FormCellBase):
+    input_type: Literal["slider"] = "slider"
+    value: int = 0
+    min: int = 0
+    max: int = 10
+    step: int = 1
 
 
-class Slider(FormCell):
-    def __init__(self, **kwargs):
-        super().__init__(type="slider", **kwargs)
-
-    @property
-    def min(self):
-        return self._parent_model.min
-
-    @min.setter
-    def min(self, value):
-        self._parent_model.min = value
-        self._parent_traitlet.min = value
-
-    @property
-    def max(self):
-        return self._parent_model.max
-
-    @max.setter
-    def max(self, value):
-        self._parent_model.max = value
-        self._parent_traitlet.max = value
-
-    @property
-    def step(self):
-        return self._parent_model.step
-
-    @step.setter
-    def step(self, value):
-        self._parent_model.step = value
-        self._parent_traitlet.step = value
+class Multiselect(FormCellBase):
+    input_type: Literal["multiselect"] = "multiselect"
+    value: List[str] = Field(default_factory=list)
+    options: List[Any]
 
 
-class Multiselect(Dropdown):
-    def __init__(self, **kwargs):
-        super().__init__(type="multiselect", **kwargs)
+class Text(FormCellBase):
+    input_type: Literal["text"] = "text"
+    value: str = ""
+    min_length: int = 0
+    max_length: int = 1000
 
 
-class Text(FormCell):
-    def __init__(self, **kwargs):
-        super().__init__(type="text", **kwargs)
+FormCell = Annotated[
+    Union[
+        Datetime,
+        Dropdown,
+        Slider,
+        Multiselect,
+        Text,
+    ],
+    Field(discriminator="input_type"),
+]
