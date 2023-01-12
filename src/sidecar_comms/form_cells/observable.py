@@ -4,6 +4,27 @@
    add support for that but it's a big task. See following issues and links:
    - Pydantic validate types in mutable lists: https://github.com/pydantic/pydantic/issues/496
    - Traitlets observe dict change: https://github.com/ipython/traitlets/issues/495
+
+Use:
+
+class Foo(ObservableModel):
+    a: int = 3
+
+f = Foo()
+f
+>>> Foo(a=3)
+
+def printer(change: Change):
+    print(f"Field {change.name} changed from {change.old} to {change.new}")
+
+obs = f.observe(printer)
+obs
+>>> Observer(names=['a'], fn=<function printer at 0x7f50dc6a0e50>, args=[], kwargs={})
+
+f.a = 4
+f
+>>> Field a changed from 3 to 4
+    Foo(a=4)
 """
 from collections import defaultdict
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Union
