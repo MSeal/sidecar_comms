@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Union
 
 from pydantic import Field, PrivateAttr
+from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
 from sidecar_comms.outbound import comm_manager
