@@ -63,7 +63,9 @@ class FormCellBase(ObservableModel):
 
     def _sync_sidecar(self, change: Change):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
-        self._comm.send(handler="update_form_cell", body={"data": change.dict()})
+        # not sending `change` through because we're doing a full replace
+        # based on the latest state of the model
+        self._comm.send(handler="update_form_cell", body={"data": self.dict()})
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
