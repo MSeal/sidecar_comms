@@ -27,8 +27,8 @@ def inbound_comm(comm, open_msg):
             form_cell = FORM_CELL_CACHE[form_cell_id]
             value = data["value"]
             # TODO: handle when non-`value` attributes change
-            form_cell._receiving_update = True
+            # form_cell._receiving_update = True
             form_cell.value = value
-            form_cell._receiving_update = False
+            # form_cell._receiving_update = False
 
     comm.send({"status": "connected", "source": "sidecar_comms"})
