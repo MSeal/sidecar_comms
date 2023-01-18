@@ -51,6 +51,8 @@ class FormCellBase(ObservableModel):
     _comm: SidecarComm = PrivateAttr()
     _receiving_update: bool = PrivateAttr(default=False)
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    input_label: str = ""
+    input_variable: str = ""
 
     def __init__(self, **data):
         super().__init__(**data)
