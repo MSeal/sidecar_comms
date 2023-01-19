@@ -1,5 +1,5 @@
 import enum
-from typing import Any, Dict, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -11,17 +11,9 @@ class SidecarRequestType(enum.Enum):
     kernel_state = "kernel_state"
 
 
-class CommMessageBody(BaseModel):
-    request: Optional[SidecarRequestType]
-    data: Optional[Dict[str, Any]]
-
-    class Config:
-        use_enum_values = True
-
-
 class CommMessage(BaseModel):
     source: Literal["sidecar_comms"] = "sidecar_comms"
-    body: CommMessageBody = Field(default_factory=CommMessageBody)
+    body: dict = Field(default_factory=dict)
     comm_id: Optional[str] = None
     target_name: Optional[str] = None
     handler: Optional[str]
