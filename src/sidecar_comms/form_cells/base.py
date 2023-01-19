@@ -30,7 +30,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Union
 
-from pydantic import Field, PrivateAttr, validator
+from pydantic import Extra, Field, PrivateAttr, create_model, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -39,7 +39,7 @@ from sidecar_comms.outbound import SidecarComm, comm_manager
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
 
 
-class FormCellBase(ObservableModel):
+class FormCellBase(ObservableModel, extra=Extra.forbid):
     """
     Base class for form cells.
      - registers the class instance in the FORM_CELL_CACHE
@@ -61,7 +61,7 @@ class FormCellBase(ObservableModel):
         self.observe(self._sync_sidecar)
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}))
+        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
         return f"<{self.__class__.__name__} {props}>"
 
     def _sync_sidecar(self, change: Change):
@@ -69,11 +69,11 @@ class FormCellBase(ObservableModel):
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
         if not self._receiving_update:
-            self._comm.send(handler="update_form_cell", body={"data": self.dict()})
+            self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
-        self._comm.send(handler="display_form_cell", body={"data": self.dict()})
+        self._comm.send(handler="display_form_cell", body=self.dict())
         print(self.__repr__())
 
 
@@ -109,8 +109,8 @@ class Slider(FormCellBase):
     step: int = 1
 
 
-class Multiselect(FormCellBase):
-    input_type: Literal["multiselect"] = "multiselect"
+class Checkboxes(FormCellBase):
+    input_type: Literal["checkboxes"] = "checkboxes"
     value: List[str] = Field(default_factory=list)
     options: List[Any]
 
@@ -126,11 +126,27 @@ class Text(FormCellBase):
 # See top of file / module docstring for example usage with pydantic.parse_obj_as
 FormCell = Annotated[
     Union[
+        Checkboxes,
         Datetime,
         Dropdown,
+        # Multiselect,
         Slider,
-        Multiselect,
         Text,
     ],
     Field(discriminator="input_type"),
 ]
+
+
+def create_custom_form_cell(data: dict) -> FormCellBase:
+    # dynamically create new model from Custom form cell base
+    custom_name = data.get("form_type", "Custom").replace("-", "").replace("_", "").title()
+    # input_type and value are required, and any additional properties will be passed through
+    custom_form_cell_params = {k: v for k, v in data.items() if k not in ["input_type", "value"]}
+    custom_form_cell_model = create_model(
+        custom_name,
+        __base__=FormCellBase,
+        input_type=data["input_type"],
+        value=data["value"],
+        **custom_form_cell_params,
+    )
+    return custom_form_cell_model
