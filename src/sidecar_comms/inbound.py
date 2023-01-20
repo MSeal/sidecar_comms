@@ -5,6 +5,7 @@ Comm target registration and message handling for inbound messages.
 
 
 from sidecar_comms.handlers.main import get_kernel_variables
+from sidecar_comms.models import CommMessage
 
 
 def inbound_comm(comm, open_msg):
@@ -18,7 +19,11 @@ def inbound_comm(comm, open_msg):
 
         # TODO: pydantic discriminators for message types->handlers
         if data.get("msg") == "get_kernel_variables":
-            msg = get_kernel_variables()
-            comm.send({"data": msg})
+            variables = get_kernel_variables()
+            msg = CommMessage(
+                body=variables,
+                handler="get_kernel_variables",
+            )
+            comm.send(msg.dict())
 
     comm.send({"status": "connected", "source": "inbound_comm"})
