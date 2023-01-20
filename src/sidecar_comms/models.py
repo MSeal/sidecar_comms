@@ -15,3 +15,4 @@ class CommMessage(BaseModel):
     body: dict = Field(default_factory=dict)
     comm_id: Optional[str] = None
     target_name: Optional[str] = None
+    handler: Optional[str] = None
