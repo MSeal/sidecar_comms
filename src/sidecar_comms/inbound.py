@@ -8,6 +8,7 @@ from pydantic import ValidationError, parse_obj_as
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, FormCell, create_custom_form_cell
 from sidecar_comms.handlers.main import get_kernel_variables
+from sidecar_comms.models import CommMessage
 
 
 def inbound_comm(comm, open_msg):
@@ -21,8 +22,12 @@ def inbound_comm(comm, open_msg):
 
         # TODO: pydantic discriminators for message types->handlers
         if data.get("msg") == "get_kernel_variables":
-            msg = get_kernel_variables()
-            comm.send(msg)
+            variables = get_kernel_variables()
+            msg = CommMessage(
+                body=variables,
+                handler="get_kernel_variables",
+            )
+            comm.send(msg.dict())
 
         if data.get("msg") == "update_form_cell":
             form_cell_id = data["form_cell_id"]
