@@ -50,8 +50,9 @@ class FormCellBase(ObservableModel, extra=Extra.forbid):
 
     _comm: SidecarComm = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    input_label: str = ""
-    input_variable: str = ""
+    label: str = ""
+    variable_name: str = ""
+    variable_type: str = ""
     value: Any = None
     settings: ObservableModel = None
 
@@ -141,7 +142,7 @@ class Custom(FormCellBase, extra=Extra.allow):
     input_type: Literal["custom"] = "custom"
 
     def __repr__(self):
-        return self.input_variable.title() + super().__repr__()
+        return self.variable_name.title() + super().__repr__()
 
 
 # FormCell is just a type, you can't instantiate FormCell()
