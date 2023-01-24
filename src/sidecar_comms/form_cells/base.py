@@ -49,7 +49,6 @@ class FormCellBase(ObservableModel, extra=Extra.forbid):
     """
 
     _comm: SidecarComm = PrivateAttr()
-    _receiving_update: bool = PrivateAttr(default=False)
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     input_label: str = ""
     input_variable: str = ""
@@ -68,8 +67,7 @@ class FormCellBase(ObservableModel, extra=Extra.forbid):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
-        if not self._receiving_update:
-            self._comm.send(handler="update_form_cell", body=self.dict())
+        self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
