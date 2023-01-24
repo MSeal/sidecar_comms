@@ -39,7 +39,7 @@ from sidecar_comms.outbound import SidecarComm, comm_manager
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
 
 
-class FormCellBase(ObservableModel, extra=Extra.forbid):
+class FormCellBase(ObservableModel):
     """
     Base class for form cells.
      - registers the class instance in the FORM_CELL_CACHE
@@ -112,7 +112,7 @@ class Slider(FormCellBase):
 
 
 class OptionsSettings(ObservableModel):
-    options: List[str]
+    options: List[str] = Field(default_factory=list)
 
 
 class Dropdown(FormCellBase):
