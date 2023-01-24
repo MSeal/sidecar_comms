@@ -30,7 +30,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Union
 
-from pydantic import Extra, Field, PrivateAttr, create_model, validator
+from pydantic import Extra, Field, PrivateAttr, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -52,12 +52,16 @@ class FormCellBase(ObservableModel, extra=Extra.forbid):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     input_label: str = ""
     input_variable: str = ""
+    value: Any = None
+    settings: ObservableModel = None
 
     def __init__(self, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
+
         self.observe(self._sync_sidecar)
+        self.settings.observe(self._sync_sidecar)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -67,6 +71,7 @@ class FormCellBase(ObservableModel, extra=Extra.forbid):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
+        print(f"{change=}")
         self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _ipython_display_(self):
@@ -93,58 +98,63 @@ class Datetime(FormCellBase):
         validate_assignment = True
 
 
-class Dropdown(FormCellBase):
-    input_type: Literal["dropdown"] = "dropdown"
-    value: str = ""
-    options: List[Any]
-
-
-class Slider(FormCellBase):
-    input_type: Literal["slider"] = "slider"
-    value: int = 0
+class SliderSettings(ObservableModel):
     min: int = 0
     max: int = 10
     step: int = 1
 
 
+class Slider(FormCellBase):
+    input_type: Literal["slider"] = "slider"
+    value: int = 0
+    settings: SliderSettings = Field(default_factory=SliderSettings)
+
+
+class OptionsSettings(ObservableModel):
+    options: List[str]
+
+
+class Dropdown(FormCellBase):
+    input_type: Literal["dropdown"] = "dropdown"
+    value: str = ""
+    settings: OptionsSettings = Field(default_factory=OptionsSettings)
+
+
 class Checkboxes(FormCellBase):
     input_type: Literal["checkboxes"] = "checkboxes"
     value: List[str] = Field(default_factory=list)
-    options: List[Any]
+    settings: OptionsSettings = Field(default_factory=OptionsSettings)
+
+
+class TextSettings(ObservableModel):
+    min_length: int = 0
+    max_length: int = 1000
 
 
 class Text(FormCellBase):
     input_type: Literal["text"] = "text"
     value: str = ""
-    min_length: int = 0
-    max_length: int = 1000
+    settings: TextSettings = Field(default_factory=TextSettings)
+
+
+class Custom(FormCellBase, extra=Extra.allow):
+    input_type: Literal["custom"] = "custom"
+
+    def __repr__(self):
+        return self.input_variable.title() + super().__repr__()
 
 
 # FormCell is just a type, you can't instantiate FormCell()
 # See top of file / module docstring for example usage with pydantic.parse_obj_as
-FormCell = Annotated[
-    Union[
-        Checkboxes,
-        Datetime,
-        Dropdown,
-        # Multiselect,
-        Slider,
-        Text,
-    ],
-    Field(discriminator="input_type"),
+model_union = Union[
+    Checkboxes,
+    Datetime,
+    Dropdown,
+    # Multiselect,
+    Slider,
+    Text,
+    Custom,
 ]
-
-
-def create_custom_form_cell(data: dict) -> FormCellBase:
-    # dynamically create new model from Custom form cell base
-    custom_name = data.get("form_type", "Custom").replace("-", "").replace("_", "").title()
-    # input_type and value are required, and any additional properties will be passed through
-    custom_form_cell_params = {k: v for k, v in data.items() if k not in ["input_type", "value"]}
-    custom_form_cell_model = create_model(
-        custom_name,
-        __base__=FormCellBase,
-        input_type=data["input_type"],
-        value=data["value"],
-        **custom_form_cell_params,
-    )
-    return custom_form_cell_model
+FormCell = Annotated[model_union, Field(discriminator="input_type")]
+# we don't have any other way to check whether an `input_type` value is valid
+valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
