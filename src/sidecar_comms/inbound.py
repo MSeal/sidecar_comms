@@ -4,7 +4,7 @@ Comm target registration and message handling for inbound messages.
 """
 
 from IPython import get_ipython
-from pydantic import parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, FormCell, valid_model_input_types
 from sidecar_comms.handlers.main import get_kernel_variables
@@ -49,7 +49,17 @@ def inbound_comm(comm, open_msg):
             if form_cell_data["input_type"] not in valid_model_input_types:
                 form_cell_data["input_type"] = "custom"
 
-            form_cell = parse_obj_as(FormCell, form_cell_data)
+            try:
+                form_cell = parse_obj_as(FormCell, form_cell_data)
+            except ValidationError as e:
+                msg = CommMessage(
+                    body={
+                        "status": "error",
+                        "error": str(e),
+                    },
+                )
+                comm.send(msg.dict())
+                return
 
             get_ipython().user_ns[form_cell_data["variable_name"]] = form_cell
             # send a comm message back to the sidecar to allow it to track
