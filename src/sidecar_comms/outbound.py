@@ -27,7 +27,6 @@ class SidecarComm(Comm, HasTraits):
             target_name=target_name,
             **data,
         )
-        print(f"{msg=}")
         super().send(data=msg.dict())
 
     def update_value(self, msg):
