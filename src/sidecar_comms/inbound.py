@@ -50,26 +50,18 @@ def inbound_comm(comm, open_msg):
                 if "No match for discriminator" not in str(e):
                     comm.send({"status": "error", "error": str(e)})
                     return
-
-                comm.send({"status": "update", "msg": "Creating custom form cell model"})
                 custom_model = create_custom_form_cell(form_cell_data)
-                comm.send(
-                    {
-                        "status": "custom_form_cell",
-                        "msg": f"Creating custom form cell model {custom_model}",
-                    }
-                )
                 form_cell = parse_obj_as(custom_model, form_cell_data)
 
             get_ipython().user_ns[form_cell_data["input_variable"]] = form_cell
             # send a comm message back to the sidecar to allow it to track
-            # the cell id to form cell id mapping
-            form_cell._comm.send(
+            # the cell id to form cell id mapping by echoing the provided cell_id
+            # and also including the newly-generated form cell model that includes
+            # the form cell id (uuid) and any other default properties
+            msg = CommMessage(
+                body={"cell_id": cell_id, **form_cell.dict()},
                 handler="register_form_cell",
-                body={
-                    "cell_id": cell_id,
-                    **form_cell.dict(),
-                },
             )
+            comm.send(msg.dict())
 
     comm.send({"status": "connected", "source": "sidecar_comms"})
