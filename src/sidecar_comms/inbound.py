@@ -61,7 +61,7 @@ def inbound_comm(comm, open_msg):
                 comm.send(msg.dict())
                 return
 
-            get_ipython().user_ns[form_cell_data["variable_name"]] = form_cell
+            get_ipython().user_ns[form_cell_data["input_variable"]] = form_cell
             # send a comm message back to the sidecar to allow it to track
             # the cell id to form cell id mapping by echoing the provided cell_id
             # and also including the newly-generated form cell model that includes
