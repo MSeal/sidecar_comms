@@ -82,13 +82,3 @@ def handle_msg(data: dict, comm: Comm) -> None:
             handler="register_form_cell",
         )
         comm.send(msg.dict())
-
-    if inbound_msg == "delete_form_cell":
-        variable_name = data["variable_name"]
-        form_cell = get_ipython().user_ns.get(variable_name)
-        if form_cell is not None:
-            msg = CommMessage(
-                body={"cell_id": data["cell_id"], **form_cell.dict()},
-                handler="deregister_form_cell",
-            )
-            comm.send(msg.dict())
