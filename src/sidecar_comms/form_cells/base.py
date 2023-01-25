@@ -30,7 +30,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Union
 
-from pydantic import Extra, Field, PrivateAttr, validator
+from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -163,3 +163,11 @@ model_union = Union[
 FormCell = Annotated[model_union, Field(discriminator="input_type")]
 # we don't have any other way to check whether an `input_type` value is valid
 valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
+
+
+def parse_as_form_cell(data: dict) -> FormCell:
+    # check if the input_type is valid before parsing into a model
+    # in case we need to overwrite it as "custom"
+    if data["input_type"] not in valid_model_input_types:
+        data["input_type"] = "custom"
+    return parse_obj_as(FormCell, data)

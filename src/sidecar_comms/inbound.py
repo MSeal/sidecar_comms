@@ -3,11 +3,11 @@ Comm target registration and message handling for inbound messages.
 (Sidecar -> kernel)
 """
 
+from deepmerge.always_merger import merge
 from ipykernel.comm import Comm
 from IPython import get_ipython
-from pydantic import ValidationError, parse_obj_as
 
-from sidecar_comms.form_cells.base import FORM_CELL_CACHE, FormCell, valid_model_input_types
+from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
 from sidecar_comms.handlers.main import get_kernel_variables
 from sidecar_comms.models import CommMessage
 
@@ -45,36 +45,37 @@ def handle_msg(data: dict, comm: Comm) -> None:
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        # potentially update more than just `value`
+
         try:
-            updated_form_cell = form_cell.copy(update=data)
-            FORM_CELL_CACHE[form_cell_id] = updated_form_cell
-            get_ipython().user_ns[data["variable_name"]] = updated_form_cell
-            msg = CommMessage(body={"status": f"updated {updated_form_cell=}"})
-            comm.send(msg.dict())
+            # deep merge the original form cell with the update data
+            update_data = merge(form_cell.dict(), data)
+            # convert back to one of our FormCell types
+            updated_form_cell = parse_as_form_cell(update_data)
+            # preserve the observers
+            updated_form_cell._observers = form_cell._observers
         except Exception as e:
             msg = CommMessage(body={"status": "error", "error": str(e)})
             comm.send(msg.dict())
             return
 
+        FORM_CELL_CACHE[form_cell_id] = updated_form_cell
+        get_ipython().user_ns[data["variable_name"]] = updated_form_cell
+
+        msg = CommMessage(body={"status": f"updated {updated_form_cell=}"})
+        comm.send(msg.dict())
+
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
-        form_cell_data = data.copy()
-        cell_id = form_cell_data.pop("cell_id")
-
-        # check if the input_type is valid before parsing into a model
-        # in case we need to overwrite it as "custom"
-        if form_cell_data["input_type"] not in valid_model_input_types:
-            form_cell_data["input_type"] = "custom"
+        cell_id = data.pop("cell_id")
 
         try:
-            form_cell = parse_obj_as(FormCell, form_cell_data)
-        except ValidationError as e:
+            form_cell = parse_as_form_cell(data)
+        except Exception as e:
             msg = CommMessage(body={"status": "error", "error": str(e)})
             comm.send(msg.dict())
             return
 
-        get_ipython().user_ns[form_cell_data["variable_name"]] = form_cell
+        get_ipython().user_ns[data["variable_name"]] = form_cell
         # send a comm message back to the sidecar to allow it to track
         # the cell id to form cell id mapping by echoing the provided cell_id
         # and also including the newly-generated form cell model that includes
