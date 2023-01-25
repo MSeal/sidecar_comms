@@ -3,7 +3,7 @@ Comm target registration and message handling for inbound messages.
 (Sidecar -> kernel)
 """
 
-from deepmerge.always_merger import merge
+from deepmerge import always_merger
 from ipykernel.comm import Comm
 from IPython import get_ipython
 
@@ -48,7 +48,7 @@ def handle_msg(data: dict, comm: Comm) -> None:
 
         try:
             # deep merge the original form cell with the update data
-            update_data = merge(form_cell.dict(), data)
+            update_data = always_merger.merge(form_cell.dict(), data)
             # convert back to one of our FormCell types
             updated_form_cell = parse_as_form_cell(update_data)
             # preserve the observers
@@ -60,9 +60,6 @@ def handle_msg(data: dict, comm: Comm) -> None:
 
         FORM_CELL_CACHE[form_cell_id] = updated_form_cell
         get_ipython().user_ns[data["variable_name"]] = updated_form_cell
-
-        msg = CommMessage(body={"status": f"updated {updated_form_cell=}"})
-        comm.send(msg.dict())
 
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
