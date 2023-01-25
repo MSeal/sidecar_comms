@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class SidecarRequestType(enum.Enum):
     cell_ids = "cell_ids"
     cell_states = "cell_states"
+    form_cells = "form_cells"
     kernel_state = "kernel_state"
 
 
