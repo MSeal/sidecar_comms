@@ -90,6 +90,8 @@ class Datetime(FormCellBase):
     def validate_value(cls, value):
         """Make sure value is a valid datetime string in isoformat"""
         if isinstance(value, str):
+            if value.endswith("Z"):
+                value = value.replace("Z", "+00:00")
             value = datetime.fromisoformat(value)
         if isinstance(value, datetime):
             value = value.strftime("%Y-%m-%dT%H:%M")
@@ -113,6 +115,7 @@ class Slider(FormCellBase):
 
 class OptionsSettings(ObservableModel):
     options: List[str] = Field(default_factory=list)
+    input_type: Union[str, dict]
 
 
 class Dropdown(FormCellBase):
