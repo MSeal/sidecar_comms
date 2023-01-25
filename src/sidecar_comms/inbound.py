@@ -61,7 +61,7 @@ def inbound_comm(comm, open_msg):
                 comm.send(msg.dict())
                 return
 
-            get_ipython().user_ns[form_cell_data["input_variable"]] = form_cell
+            get_ipython().user_ns[form_cell_data["variable_name"]] = form_cell
             # send a comm message back to the sidecar to allow it to track
             # the cell id to form cell id mapping by echoing the provided cell_id
             # and also including the newly-generated form cell model that includes
@@ -71,5 +71,16 @@ def inbound_comm(comm, open_msg):
                 handler="register_form_cell",
             )
             comm.send(msg.dict())
+
+        if data.get("msg") == "delete_form_cell":
+            variable_name = form_cell_data["variable_name"]
+            form_cell = get_ipython().user_ns.get(variable_name)
+            if form_cell is not None:
+                del get_ipython().user_ns[variable_name]
+                msg = CommMessage(
+                    body={"cell_id": cell_id, **form_cell.dict()},
+                    handler="deregister_form_cell",
+                )
+                comm.send(msg.dict())
 
     comm.send({"status": "connected", "source": "sidecar_comms"})
