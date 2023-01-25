@@ -30,13 +30,21 @@ def inbound_comm(comm, open_msg):
             comm.send(msg.dict())
 
         if data.get("msg") == "update_form_cell":
-            form_cell_id = data["form_cell_id"]
+            form_cell_id = data.pop("form_cell_id")
             form_cell = FORM_CELL_CACHE[form_cell_id]
-            value = data["value"]
-            # TODO: handle when non-`value` attributes change
-            # form_cell._receiving_update = True
-            form_cell.value = value
-            # form_cell._receiving_update = False
+            # potentially update more than just `value`
+            try:
+                form_cell = form_cell.copy(update=data)
+                comm.send(body={"status": f"updated {form_cell=}"})
+            except Exception as e:
+                msg = CommMessage(
+                    body={
+                        "status": "error",
+                        "error": str(e),
+                    },
+                )
+                comm.send(msg.dict())
+                return
 
         if data.get("msg") == "create_form_cell":
             # form cell object created from the frontend
