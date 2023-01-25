@@ -115,7 +115,7 @@ class Slider(FormCellBase):
 
 class OptionsSettings(ObservableModel):
     options: List[str] = Field(default_factory=list)
-    input_type: Union[str, dict]
+    variable_type: Union[str, dict]
 
 
 class Dropdown(FormCellBase):
