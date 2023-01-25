@@ -115,18 +115,19 @@ class Slider(FormCellBase):
 
 class OptionsSettings(ObservableModel):
     options: List[str] = Field(default_factory=list)
-    variable_type: Union[str, dict]
 
 
 class Dropdown(FormCellBase):
     input_type: Literal["dropdown"] = "dropdown"
     value: str = ""
+    variable_type: Union[str, dict]
     settings: OptionsSettings = Field(default_factory=OptionsSettings)
 
 
 class Checkboxes(FormCellBase):
     input_type: Literal["checkboxes"] = "checkboxes"
     value: List[str] = Field(default_factory=list)
+    variable_type: Union[str, dict]
     settings: OptionsSettings = Field(default_factory=OptionsSettings)
 
 
