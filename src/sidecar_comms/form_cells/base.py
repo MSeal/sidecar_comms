@@ -115,6 +115,14 @@ class Slider(FormCellBase):
 class OptionsSettings(ObservableModel):
     options: List[str] = Field(default_factory=list)
 
+    @validator("options", pre=True, always=True)
+    def validate_options(cls, value):
+        """Make sure values are a unique list of strings."""
+        if not isinstance(value, list):
+            value = [value]
+        value = list(set(value))
+        return value
+
 
 class Dropdown(FormCellBase):
     input_type: Literal["dropdown"] = "dropdown"
