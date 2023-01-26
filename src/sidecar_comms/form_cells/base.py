@@ -101,9 +101,14 @@ class Datetime(FormCellBase):
 
 
 class SliderSettings(ObservableModel):
-    min: int = 0
-    max: int = 10
-    step: int = 1
+    min: Union[int, float] = 0
+    max: Union[int, float] = 10
+    step: Union[int, float] = 1
+
+    @validator("step", pre=True, always=True)
+    def validate_step(cls, value):
+        """Make sure step is a positive number."""
+        return abs(value)
 
 
 class Slider(FormCellBase):
