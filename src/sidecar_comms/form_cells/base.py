@@ -79,6 +79,9 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="display_form_cell", body=self.dict())
         print(self.__repr__())
 
+    class Config:
+        validate_assignment = True
+
 
 # --- Specific models ---
 class Datetime(FormCellBase):
@@ -96,19 +99,14 @@ class Datetime(FormCellBase):
             value = value.strftime("%Y-%m-%dT%H:%M")
         return value
 
-    class Config:
-        validate_assignment = True
-
 
 class SliderSettings(ObservableModel):
     min: Union[int, float] = 0
     max: Union[int, float] = 10
-    step: Union[int, float] = 1
+    step: Union[int, float] = Field(default=1, gt=0)
 
-    @validator("step", pre=True, always=True)
-    def validate_step(cls, value):
-        """Make sure step is a positive number."""
-        return abs(value)
+    class Config:
+        validate_assignment = True
 
 
 class Slider(FormCellBase):
