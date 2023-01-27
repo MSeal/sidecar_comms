@@ -111,7 +111,7 @@ class SliderSettings(ObservableModel):
 
 class Slider(FormCellBase):
     input_type: Literal["slider"] = "slider"
-    value: int = 0
+    value: Union[int, float] = 0
     settings: SliderSettings = Field(default_factory=SliderSettings)
 
 
