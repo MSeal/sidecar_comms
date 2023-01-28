@@ -1,3 +1,5 @@
+from typing import Optional
+
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 
@@ -17,7 +19,7 @@ def get_kernel_variables():
 def rename_kernel_variable(
     old_name: str,
     new_name: str,
-    ipython_shell: InteractiveShell,
+    ipython_shell: Optional[InteractiveShell] = None,
 ) -> str:
     """Renames a variable in the kernel."""
     ipython = ipython_shell or get_ipython()
