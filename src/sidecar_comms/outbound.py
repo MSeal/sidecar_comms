@@ -52,7 +52,12 @@ class CommManager:
 
         comm = SidecarComm(target_name=target_name, data=data)
         self.comms[target_name] = comm
-        comm.send(body={"request": target_name})
+
+        msg = CommMessage(
+            body={"register_target": target_name},
+            handler="register_comm_handler",
+        )
+        comm.send(msg.dict())
 
         # if a message with {"value": X} is sent to this comm,
         # update the comm's value attribute
