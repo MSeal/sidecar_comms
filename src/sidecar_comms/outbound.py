@@ -54,8 +54,8 @@ class CommManager:
         self.comms[target_name] = comm
 
         msg = CommMessage(
-            body={"register_target": target_name},
-            handler="register_comm_handler",
+            body={"target": target_name},
+            handler="register_comm_target",
         )
         comm.send(msg.dict())
 
