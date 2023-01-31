@@ -9,11 +9,7 @@ def get_kernel_variables():
     ipython = get_ipython()
     variables = dict(ipython.user_ns)
     variable_types = {name: str(type(value)) for name, value in variables.items()}
-    return {
-        "data": variable_types,
-        "source": "sidecar_comms",
-        "handler": "get_kernel_variables",
-    }
+    return variable_types
 
 
 def rename_kernel_variable(
