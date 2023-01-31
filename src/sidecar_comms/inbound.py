@@ -10,7 +10,7 @@ from ipykernel.comm import Comm
 from IPython import get_ipython
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
-from sidecar_comms.handlers.main import get_kernel_variables
+from sidecar_comms.handlers.main import get_kernel_variables, rename_kernel_variable
 from sidecar_comms.models import CommMessage
 
 
@@ -48,6 +48,12 @@ def handle_msg(data: dict, comm: Comm) -> None:
         variables = get_kernel_variables()
         msg = CommMessage(body=variables, handler="get_kernel_variables")
         comm.send(msg.dict())
+
+    if inbound_msg == "rename_kernel_variable":
+        if "old_name" in data and "new_name" in data:
+            status = rename_kernel_variable(data["old_name"], data["new_name"])
+            msg = CommMessage(body={"status": status}, handler="rename_kernel_variable")
+            comm.send(msg.dict())
 
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
