@@ -96,19 +96,19 @@ class Datetime(FormCellBase):
             value = value.strftime("%Y-%m-%dT%H:%M")
         return value
 
+
+class SliderSettings(ObservableModel):
+    min: Union[int, float] = 0
+    max: Union[int, float] = 10
+    step: Union[int, float] = Field(default=1, gt=0)
+
     class Config:
         validate_assignment = True
 
 
-class SliderSettings(ObservableModel):
-    min: int = 0
-    max: int = 10
-    step: int = 1
-
-
 class Slider(FormCellBase):
     input_type: Literal["slider"] = "slider"
-    value: int = 0
+    value: Union[int, float] = 0
     settings: SliderSettings = Field(default_factory=SliderSettings)
 
 

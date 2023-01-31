@@ -54,6 +54,9 @@ class ObservableModel(BaseModel):
         default_factory=lambda: defaultdict(list)
     )
 
+    class Config:
+        validate_assignment = True
+
     def __setattr__(self, name, value):
         if name not in self._observers:
             super().__setattr__(name, value)
