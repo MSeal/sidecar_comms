@@ -79,9 +79,6 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="display_form_cell", body=self.dict())
         print(self.__repr__())
 
-    class Config:
-        validate_assignment = True
-
 
 # --- Specific models ---
 class Datetime(FormCellBase):
