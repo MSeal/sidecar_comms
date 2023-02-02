@@ -22,20 +22,21 @@ def inbound_comm(comm, open_msg):
     def _recv(msg):
         data = msg["content"]["data"]
         # echo for debugging
-        msg = CommMessage(body={"status": "received", "data": data})
-        comm.send(msg.dict())
+        echo_msg = CommMessage(body={"status": "received", "data": data})
+        comm.send(echo_msg.dict())
 
         try:
             handle_msg(data, comm)
         except Exception as e:
             # echo back any errors in the event we can't print/log to an output
-            msg = CommMessage(
+            error_msg = CommMessage(
                 body={
                     "status": "error",
-                    "error": f"{e} -> {traceback.format_exc()}",
+                    "error": f"error handling message: {e} -> {traceback.format_exc()}",
+                    "msg": msg,
                 }
             )
-            comm.send(msg.dict())
+            comm.send(error_msg.dict())
 
     comm.send({"status": "connected", "source": "sidecar_comms"})
 
@@ -60,7 +61,10 @@ def handle_msg(
     if inbound_msg == "rename_kernel_variable":
         if "old_name" in data and "new_name" in data:
             status = rename_kernel_variable(data["old_name"], data["new_name"])
-            msg = CommMessage(body={"status": status}, handler="rename_kernel_variable")
+            msg = CommMessage(
+                body={"status": status},
+                handler="rename_kernel_variable",
+            )
             comm.send(msg.dict())
 
     if inbound_msg == "update_form_cell":
