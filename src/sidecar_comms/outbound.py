@@ -57,7 +57,7 @@ class CommManager:
             body={"target": target_name},
             handler="register_comm_target",
         )
-        comm.send(msg.dict())
+        comm.send(**msg.dict())
 
         # if a message with {"value": X} is sent to this comm,
         # update the comm's value attribute

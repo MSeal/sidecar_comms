@@ -102,9 +102,6 @@ class SliderSettings(ObservableModel):
     max: Union[int, float] = 10
     step: Union[int, float] = Field(default=1, gt=0)
 
-    class Config:
-        validate_assignment = True
-
 
 class Slider(FormCellBase):
     input_type: Literal["slider"] = "slider"
