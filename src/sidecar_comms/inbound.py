@@ -10,6 +10,7 @@ from ipykernel.comm import Comm
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 
+from sidecar_comms.form_cells import openai_api
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
 from sidecar_comms.handlers.main import get_kernel_variables, rename_kernel_variable
 from sidecar_comms.models import CommMessage
@@ -119,3 +120,24 @@ def handle_msg(
         form_cell = FORM_CELL_CACHE[form_cell_id]
         value_variable = data["value_variable"]
         form_cell._update_value_variable(value_variable)
+
+    if inbound_msg == "openai_request":
+        # TODO: allow optional params
+        prompt = openai_api.generate_prompt(data["prompt"])
+        msg = CommMessage(
+            body={"status": f"sending prompt: {prompt=}"},
+        )
+        comm.send(msg.dict())
+        if len(prompt) > 4097:
+            msg = CommMessage(
+                body={"status": f"prompt too long: {len(prompt)}"},
+            )
+            comm.send(msg.dict())
+            return
+
+        resp = openai_api.generate_response(prompt)
+        msg = CommMessage(
+            body={"cell_id": data["cell_id"], "resp": resp},
+            handler="openai_response",
+        )
+        comm.send(msg.dict())
