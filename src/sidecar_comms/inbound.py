@@ -60,7 +60,11 @@ def handle_msg(
 
     if inbound_msg == "rename_kernel_variable":
         if "old_name" in data and "new_name" in data:
-            status = rename_kernel_variable(data["old_name"], data["new_name"])
+            status = rename_kernel_variable(
+                data["old_name"],
+                data["new_name"],
+                ipython_shell=ipython_shell,
+            )
             msg = CommMessage(
                 body={"status": status},
                 handler="rename_kernel_variable",
@@ -89,8 +93,17 @@ def handle_msg(
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
         cell_id = data.pop("cell_id")
+        cell_id_str = str(cell_id).replace("-", "_")
+
+        variable_name = data.get("variable_name", "") or f"_form_cell_{cell_id_str}"
+        data['variable_name'] = variable_name
+
+        value_variable_name = data.get("value_variable_name", "") or f"{variable_name}_value"
+        data['value_variable_name'] = value_variable_name
+
         form_cell = parse_as_form_cell(data)
-        get_ipython().user_ns[data["variable_name"]] = form_cell
+
+        get_ipython().user_ns[variable_name] = form_cell
         # send a comm message back to the sidecar to allow it to track
         # the cell id to form cell id mapping by echoing the provided cell_id
         # and also including the newly-generated form cell model that includes
@@ -100,3 +113,9 @@ def handle_msg(
             handler="register_form_cell",
         )
         comm.send(msg.dict())
+
+    if inbound_msg == "assign_value_variable":
+        form_cell_id = data["form_cell_id"]
+        form_cell = FORM_CELL_CACHE[form_cell_id]
+        value_variable = data["value_variable"]
+        form_cell._update_value_variable(value_variable)

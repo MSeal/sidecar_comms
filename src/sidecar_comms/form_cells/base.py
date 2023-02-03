@@ -28,12 +28,15 @@ model
 """
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
+from IPython import get_ipython
+from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
+from sidecar_comms.models import CommMessage
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
@@ -52,6 +55,7 @@ class FormCellBase(ObservableModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = ""
     variable_name: str = ""
+    value_variable_name: str = ""
     variable_type: str = ""
     value: Any = None
     settings: ObservableModel = None
@@ -63,6 +67,7 @@ class FormCellBase(ObservableModel):
 
         self.observe(self._sync_sidecar)
         self.settings.observe(self._sync_sidecar)
+        self._update_value_variable(self.value_variable_name)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -73,6 +78,22 @@ class FormCellBase(ObservableModel):
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
         self._comm.send(handler="update_form_cell", body=self.dict())
+        if change.name == "value":
+            self._update_value_variable(self.value_variable_name)
+
+    def _update_value_variable(
+        self,
+        value_variable: str,
+        ipython_shell: Optional[InteractiveShell] = None,
+    ) -> None:
+        ipython = ipython_shell or get_ipython()
+        ipython.user_ns[value_variable] = self.value
+        msg = {
+            "status": "success",
+            "value_variable": value_variable,
+            "value_variable_value": self.value,
+        }
+        self._comm.send(handler="assigned_form_cell", body=msg)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
