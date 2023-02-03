@@ -96,10 +96,10 @@ def handle_msg(
         cell_id_str = str(cell_id).replace("-", "_")
 
         variable_name = data.get("variable_name", "") or f"_form_cell_{cell_id_str}"
-        data['variable_name'] = variable_name
+        data["variable_name"] = variable_name
 
         value_variable_name = data.get("value_variable_name", "") or f"{variable_name}_value"
-        data['value_variable_name'] = value_variable_name
+        data["value_variable_name"] = value_variable_name
 
         form_cell = parse_as_form_cell(data)
 
