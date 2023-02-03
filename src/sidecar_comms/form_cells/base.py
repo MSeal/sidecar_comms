@@ -53,7 +53,7 @@ class FormCellBase(ObservableModel):
     _comm: SidecarComm = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = ""
-    variable_name: str = ""
+    model_variable_name: str = ""
     value_variable_name: str = ""
     variable_type: str = ""
     value: Any = None
@@ -67,6 +67,7 @@ class FormCellBase(ObservableModel):
         self.observe(self._sync_sidecar)
         self.settings.observe(self._sync_sidecar)
 
+        # registers to the ipython user namespace for access
         self._update_value_variable(self.value_variable_name)
 
     def __repr__(self):
@@ -83,15 +84,15 @@ class FormCellBase(ObservableModel):
 
     def _update_value_variable(
         self,
-        value_variable: str,
+        value_variable_name: str,
         ipython_shell: Optional[InteractiveShell] = None,
     ) -> None:
-        self.value_variable_name = value_variable
+        self.value_variable_name = value_variable_name
         ipython = ipython_shell or get_ipython()
-        ipython.user_ns[value_variable] = self.value
+        ipython.user_ns[value_variable_name] = self.value
         msg = {
             "status": "success",
-            "value_variable": value_variable,
+            "value_variable_name": value_variable_name,
             "value_variable_value": self.value,
         }
         self._comm.send(handler="assigned_form_cell", body=msg)
@@ -172,7 +173,7 @@ class Custom(FormCellBase, extra=Extra.allow):
     input_type: Literal["custom"] = "custom"
 
     def __repr__(self):
-        return self.variable_name.title() + super().__repr__()
+        return self.model_variable_name.title() + super().__repr__()
 
 
 # FormCell is just a type, you can't instantiate FormCell()
