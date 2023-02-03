@@ -67,6 +67,7 @@ class FormCellBase(ObservableModel):
 
         self.observe(self._sync_sidecar)
         self.settings.observe(self._sync_sidecar)
+
         self._update_value_variable(self.value_variable_name)
 
     def __repr__(self):
@@ -86,6 +87,7 @@ class FormCellBase(ObservableModel):
         value_variable: str,
         ipython_shell: Optional[InteractiveShell] = None,
     ) -> None:
+        self.value_variable_name = value_variable
         ipython = ipython_shell or get_ipython()
         ipython.user_ns[value_variable] = self.value
         msg = {
