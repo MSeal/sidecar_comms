@@ -36,7 +36,6 @@ from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
-from sidecar_comms.models import CommMessage
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
