@@ -93,17 +93,8 @@ def handle_msg(
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
         cell_id = data.pop("cell_id")
-        cell_id_str = str(cell_id).replace("-", "_")
-
-        model_variable_name = data.get("model_variable_name", "") or f"_form_cell_{cell_id_str}"
-        data["model_variable_name"] = model_variable_name
-
-        value_variable_name = data.get("value_variable_name", "") or f"{model_variable_name}_value"
-        data["value_variable_name"] = value_variable_name
-
         form_cell = parse_as_form_cell(data)
-
-        get_ipython().user_ns[model_variable_name] = form_cell
+        get_ipython().user_ns[data["model_variable_name"]] = form_cell
         # send a comm message back to the sidecar to allow it to track
         # the cell id to form cell id mapping by echoing the provided cell_id
         # and also including the newly-generated form cell model that includes

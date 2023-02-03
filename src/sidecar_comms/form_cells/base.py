@@ -65,9 +65,10 @@ class FormCellBase(ObservableModel):
         FORM_CELL_CACHE[self.id] = self
 
         self.observe(self._sync_sidecar)
+        self.observe(self._update_value_variable, names=["value"])
         self.settings.observe(self._sync_sidecar)
 
-        # registers to the ipython user namespace for access
+        # make sure the value variable is available on init
         self._update_value_variable(self.value_variable_name)
 
     def __repr__(self):
@@ -79,23 +80,15 @@ class FormCellBase(ObservableModel):
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
         self._comm.send(handler="update_form_cell", body=self.dict())
-        if change.name == "value":
-            self._update_value_variable(self.value_variable_name)
 
     def _update_value_variable(
         self,
         value_variable_name: str,
         ipython_shell: Optional[InteractiveShell] = None,
     ) -> None:
-        self.value_variable_name = value_variable_name
+        self.value_variable_name = value_variable_name or f"{self.model_variable_name}_value"
         ipython = ipython_shell or get_ipython()
-        ipython.user_ns[value_variable_name] = self.value
-        msg = {
-            "status": "success",
-            "value_variable_name": value_variable_name,
-            "value_variable_value": self.value,
-        }
-        self._comm.send(handler="assigned_form_cell", body=msg)
+        ipython.user_ns[self.value_variable_name] = self.value
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
