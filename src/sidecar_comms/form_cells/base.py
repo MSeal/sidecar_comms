@@ -26,6 +26,7 @@ model = pydantic.parse_obj_as(FormCell, {"input_type": "datetime", "value": "202
 model
 >>> Datetime(value=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc))
 """
+import enum
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -39,6 +40,12 @@ from sidecar_comms.form_cells.observable import Change, ObservableModel
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
+
+
+class ExecutionTriggerBehavior(str, enum.Enum):
+    change_variable_only = "change_variable_only"
+    change_variable_and_execute_all_below = "change_variable_and_execute_all_below"
+    change_variable_and_execute_all = "change_variable_and_execute_all"
 
 
 class FormCellBase(ObservableModel):
@@ -58,6 +65,9 @@ class FormCellBase(ObservableModel):
     variable_type: str = ""
     value: Any = None
     settings: ObservableModel = None
+    execution_trigger_behavior: ExecutionTriggerBehavior = (
+        ExecutionTriggerBehavior.change_variable_only
+    )
 
     def __init__(self, **data):
         super().__init__(**data)
