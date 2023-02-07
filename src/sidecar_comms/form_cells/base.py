@@ -75,11 +75,14 @@ class FormCellBase(ObservableModel):
         FORM_CELL_CACHE[self.id] = self
 
         self.observe(self._sync_sidecar)
-        self.observe(self._update_value_variable, names=["value"])
+        self.observe(self._on_value_update, names=["value"])
         self.settings.observe(self._sync_sidecar)
 
         # make sure the value variable is available on init
-        self._update_value_variable(self.value_variable_name)
+        self.value_variable_name = (
+            data.get("value_variable_name") or f"{self.model_variable_name}_value"
+        )
+        self._update_value_variable()
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -91,12 +94,15 @@ class FormCellBase(ObservableModel):
         # based on the latest state of the model
         self._comm.send(handler="update_form_cell", body=self.dict())
 
+    def _on_value_update(self, change: Change) -> None:
+        # not sending `change` since the value is already updated,
+        # just syncing the value variable
+        self._update_value_variable()
+
     def _update_value_variable(
         self,
-        value_variable_name: str,
         ipython_shell: Optional[InteractiveShell] = None,
     ) -> None:
-        self.value_variable_name = value_variable_name or f"{self.model_variable_name}_value"
         ipython = ipython_shell or get_ipython()
         ipython.user_ns[self.value_variable_name] = self.value
 
