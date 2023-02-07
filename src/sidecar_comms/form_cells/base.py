@@ -29,8 +29,10 @@ model
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
+from IPython import get_ipython
+from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
@@ -58,7 +60,8 @@ class FormCellBase(ObservableModel):
     _comm: SidecarComm = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = ""
-    variable_name: str = ""
+    model_variable_name: str = ""
+    value_variable_name: str = ""
     variable_type: str = ""
     value: Any = None
     settings: ObservableModel = None
@@ -72,7 +75,14 @@ class FormCellBase(ObservableModel):
         FORM_CELL_CACHE[self.id] = self
 
         self.observe(self._sync_sidecar)
+        self.observe(self._on_value_update, names=["value"])
         self.settings.observe(self._sync_sidecar)
+
+        # make sure the value variable is available on init
+        self.value_variable_name = (
+            data.get("value_variable_name") or f"{self.model_variable_name}_value"
+        )
+        self._update_value_variable()
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -83,6 +93,18 @@ class FormCellBase(ObservableModel):
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
         self._comm.send(handler="update_form_cell", body=self.dict())
+
+    def _on_value_update(self, change: Change) -> None:
+        # not sending `change` since the value is already updated,
+        # just syncing the value variable
+        self._update_value_variable()
+
+    def _update_value_variable(
+        self,
+        ipython_shell: Optional[InteractiveShell] = None,
+    ) -> None:
+        ipython = ipython_shell or get_ipython()
+        ipython.user_ns[self.value_variable_name] = self.value
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
@@ -160,7 +182,7 @@ class Custom(FormCellBase, extra=Extra.allow):
     input_type: Literal["custom"] = "custom"
 
     def __repr__(self):
-        return self.variable_name.title() + super().__repr__()
+        return self.model_variable_name.title() + super().__repr__()
 
 
 # FormCell is just a type, you can't instantiate FormCell()
