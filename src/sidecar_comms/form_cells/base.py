@@ -29,8 +29,9 @@ model
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
+from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
@@ -57,6 +58,7 @@ class FormCellBase(ObservableModel):
     """
 
     _comm: SidecarComm = PrivateAttr()
+    _ipy: Optional[InteractiveShell] = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = ""
     model_variable_name: str = ""
@@ -68,7 +70,7 @@ class FormCellBase(ObservableModel):
         ExecutionTriggerBehavior.change_variable_only
     )
 
-    def __init__(self, **data):
+    def __init__(self, ipython_shell: Optional[InteractiveShell] = None, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
@@ -81,7 +83,12 @@ class FormCellBase(ObservableModel):
         self.value_variable_name = (
             data.get("value_variable_name") or f"{self.model_variable_name}_value"
         )
-        set_kernel_variable(self.value_variable_name, self.value)
+        self._ipy = ipython_shell
+        set_kernel_variable(
+            self.value_variable_name,
+            self.value,
+            ipython_shell=self._ipy,
+        )
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -94,7 +101,11 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _on_value_update(self, change: Change) -> None:
-        set_kernel_variable(self.value_variable_name, change.new)
+        set_kernel_variable(
+            self.value_variable_name,
+            change.new,
+            ipython_shell=self._ipy,
+        )
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
@@ -139,7 +150,6 @@ class OptionsSettings(ObservableModel):
         """Make sure values are a unique list of strings."""
         if not isinstance(value, list):
             value = [value]
-        value = list(set(value))
         return value
 
 
@@ -168,8 +178,13 @@ class Text(FormCellBase):
     settings: TextSettings = Field(default_factory=TextSettings)
 
 
+class CustomSettings(ObservableModel, extra=Extra.allow):
+    pass
+
+
 class Custom(FormCellBase, extra=Extra.allow):
     input_type: Literal["custom"] = "custom"
+    settings: CustomSettings = Field(default_factory=CustomSettings)
 
     def __repr__(self):
         return self.model_variable_name.title() + super().__repr__()

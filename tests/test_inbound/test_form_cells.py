@@ -21,6 +21,7 @@ class TestParseFormCell:
             "settings": {
                 "options": ["test"],
             },
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "checkboxes"
@@ -37,11 +38,12 @@ class TestParseFormCell:
             "value": "2023-01-01T00:00:00Z",
             "variable_type": "datetime",
             "settings": {},
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "datetime"
         assert form_cell.model_variable_name == "test"
-        assert form_cell.value == "2023-01-01T00:00:00+00:00"
+        assert form_cell.value == "2023-01-01T00:00"
         assert form_cell.variable_type == "datetime"
         assert form_cell.settings == {}
         assert isinstance(form_cell, Datetime)
@@ -50,16 +52,17 @@ class TestParseFormCell:
         data = {
             "input_type": "dropdown",
             "model_variable_name": "test",
-            "value": ["a"],
+            "value": "a",
             "variable_type": "str",
             "settings": {
                 "options": ["a", "b", "c"],
             },
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "dropdown"
         assert form_cell.model_variable_name == "test"
-        assert form_cell.value == ["a"]
+        assert form_cell.value == "a"
         assert form_cell.variable_type == "str"
         assert form_cell.settings.options == ["a", "b", "c"]
         assert isinstance(form_cell, Dropdown)
@@ -75,6 +78,7 @@ class TestParseFormCell:
                 "max": 100,
                 "step": 1,
             },
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "slider"
@@ -95,6 +99,7 @@ class TestParseFormCell:
                 "min_length": 0,
                 "max_length": 1000,
             },
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "text"
@@ -109,14 +114,16 @@ class TestParseFormCell:
             "input_type": "my_new_form_cell_type",
             "model_variable_name": "test",
             "value": "test",
-            "settings": {"min_foo": 0, "max_bar": 50},
-            "form_type": "new_plugin",
+            "foo": "bar",
+            "settings": {
+                "abc": "def",
+            },
+            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "custom"
         assert form_cell.model_variable_name == "test"
         assert form_cell.value == "test"
-        assert form_cell.settings.min_foo == 0
-        assert form_cell.settings.max_bar == 50
-        assert form_cell.form_type == "new_plugin"
+        assert form_cell.foo == "bar"
+        assert form_cell.settings.abc == "def"
         assert isinstance(form_cell, Custom)
