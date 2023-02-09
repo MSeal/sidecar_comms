@@ -11,7 +11,11 @@ from IPython.core.interactiveshell import InteractiveShell
 from pydantic.utils import deep_update
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
-from sidecar_comms.handlers.main import get_kernel_variables, rename_kernel_variable
+from sidecar_comms.handlers.main import (
+    get_kernel_variables,
+    rename_kernel_variable,
+    set_kernel_variable,
+)
 from sidecar_comms.models import CommMessage
 
 
@@ -108,5 +112,4 @@ def handle_msg(
     if inbound_msg == "assign_value_variable":
         form_cell_id = data["form_cell_id"]
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        value_variable_name = data["value_variable_name"]
-        form_cell._update_value_variable(value_variable_name)
+        set_kernel_variable(data["value_variable_name"], form_cell.value)

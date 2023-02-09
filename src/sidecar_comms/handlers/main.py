@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
@@ -23,6 +23,20 @@ def rename_kernel_variable(
         if new_name:
             ipython.user_ns[new_name] = ipython.user_ns[old_name]
         del ipython.user_ns[old_name]
+        return "success"
+    except Exception as e:
+        return str(e)
+
+
+def set_kernel_variable(
+    name: str,
+    value: Any,
+    ipython_shell: Optional[InteractiveShell] = None,
+) -> str:
+    """Sets a variable in the kernel."""
+    ipython = ipython_shell or get_ipython()
+    try:
+        ipython.user_ns[name] = value
         return "success"
     except Exception as e:
         return str(e)

@@ -29,14 +29,13 @@ model
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Union
 
-from IPython import get_ipython
-from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
+from sidecar_comms.handlers.main import set_kernel_variable
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
@@ -82,7 +81,7 @@ class FormCellBase(ObservableModel):
         self.value_variable_name = (
             data.get("value_variable_name") or f"{self.model_variable_name}_value"
         )
-        self._update_value_variable()
+        set_kernel_variable(self.value_variable_name, self.value)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
@@ -95,16 +94,7 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _on_value_update(self, change: Change) -> None:
-        # not sending `change` since the value is already updated,
-        # just syncing the value variable
-        self._update_value_variable()
-
-    def _update_value_variable(
-        self,
-        ipython_shell: Optional[InteractiveShell] = None,
-    ) -> None:
-        ipython = ipython_shell or get_ipython()
-        ipython.user_ns[self.value_variable_name] = self.value
+        set_kernel_variable(self.value_variable_name, change.new)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
