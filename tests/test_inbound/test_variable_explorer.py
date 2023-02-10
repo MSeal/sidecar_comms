@@ -1,6 +1,6 @@
 from IPython.core.interactiveshell import InteractiveShell
 
-from sidecar_comms.handlers.variable_explorer import get_kernel_variables, short_value
+from sidecar_comms.handlers.variable_explorer import VariableModel, get_kernel_variables
 
 
 class TestGetKernelVariables:
@@ -27,7 +27,7 @@ class TestGetKernelVariables:
         assert "foo" in variables
         assert variables["foo"]["name"] == "foo"
         assert variables["foo"]["type"] == "int"
-        assert variables["foo"]["size"] == 1
+        assert variables["foo"]["size"] is None
         assert variables["foo"]["value"] == 123
 
     def test_list(self, get_ipython: InteractiveShell):
@@ -57,11 +57,16 @@ class TestGetKernelVariables:
     def test_long_string(self, get_ipython: InteractiveShell):
         """Test that a long string variable is added to the variables
         response with the correct information."""
-        get_ipython.user_ns["qux"] = "ABC" * 5000
+        variable_name = "qux"
+        variable_value = "ABC" * 5000
+        get_ipython.user_ns[variable_name] = variable_value
         variables = get_kernel_variables(ipython_shell=get_ipython)
         # add a long string variable
         assert "qux" in variables
         assert variables["qux"]["name"] == "qux"
         assert variables["qux"]["type"] == "str"
         assert variables["qux"]["size"] == 15000
-        assert variables["qux"]["value"] == short_value("ABC" * 5000)
+        assert (
+            variables["qux"]["value"]
+            == VariableModel(name=variable_name, value=variable_value).sample_value
+        )
