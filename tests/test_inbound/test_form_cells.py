@@ -209,7 +209,7 @@ class TestFormCellUpdates:
 
 
 class TestFormCellObservers:
-    def test_callback_triggered_on_change(self):
+    def test_callback_triggered_on_value_change(self):
         """Test that a callback is triggered when the form cell value
         is updated."""
         data = {
@@ -225,3 +225,26 @@ class TestFormCellObservers:
         form_cell.observe(mock_callback)
         form_cell.value = ["b"]
         mock_callback.assert_called_once_with({"name": "value", "old": ["a"], "new": ["b"]})
+
+    def test_callback_triggered_on_settings_change(self):
+        """Test that a callback is triggered when the form cell settings
+        are updated."""
+        data = {
+            "input_type": "checkboxes",
+            "model_variable_name": "test",
+            "value": ["a"],
+            "settings": {
+                "options": ["a", "b", "c"],
+            },
+        }
+        form_cell = parse_as_form_cell(data)
+        mock_callback = Mock()
+        form_cell.settings.observe(mock_callback)
+        form_cell.settings.options = ["a", "b", "x", "y"]
+        mock_callback.assert_called_once_with(
+            {
+                "name": "options",
+                "old": ["a", "b", "c"],
+                "new": ["a", "b", "x", "y"],
+            }
+        )
