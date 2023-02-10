@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 class VariableModel(BaseModel):
     name: str
-    value: Any
+    sample_value: Any
     type: str
     size: Optional[int]
     size_bytes: Optional[int]
@@ -58,7 +58,7 @@ def variable_sample_value(value: Any) -> Any:
 def variable_to_model(name: str, value: Any) -> VariableModel:
     return VariableModel(
         name=name,
-        value=variable_sample_value(value),
+        sample_value=variable_sample_value(value),
         type=variable_type(value),
         size=variable_size(value),
         size_bytes=variable_size_bytes(value),
