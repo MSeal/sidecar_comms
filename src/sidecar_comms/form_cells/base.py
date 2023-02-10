@@ -37,7 +37,7 @@ from pydantic.utils import deep_update
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
-from sidecar_comms.handlers.main import set_kernel_variable
+from sidecar_comms.handlers.variable_explorer import set_kernel_variable
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
