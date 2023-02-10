@@ -8,7 +8,6 @@ from sidecar_comms.form_cells.base import (
     Slider,
     Text,
     parse_as_form_cell,
-    update_form_cell,
 )
 
 
@@ -181,9 +180,9 @@ class TestFormCellUpdates:
         }
         form_cell = parse_as_form_cell(data)
         update_dict = {"settings": {"options": ["a", "b", "x", "y"]}}
-        updated_form_cell = update_form_cell(form_cell, update_dict)
-        assert updated_form_cell.value == ["a"]
-        assert updated_form_cell.settings.options == ["a", "b", "x", "y"]
+        form_cell.update(update_dict)
+        assert form_cell.value == ["a"]
+        assert form_cell.settings.options == ["a", "b", "x", "y"]
 
     def test_update_dict_value_settings(self):
         """Test that updating a form cell with a nested dictionary
@@ -202,6 +201,6 @@ class TestFormCellUpdates:
             "settings": {"options": ["a", "b", "x", "y"]},
             "value": ["b", "x"],
         }
-        updated_form_cell = update_form_cell(form_cell, update_dict)
-        assert updated_form_cell.value == ["b", "x"]
-        assert updated_form_cell.settings.options == ["a", "b", "x", "y"]
+        form_cell.update(update_dict)
+        assert form_cell.value == ["b", "x"]
+        assert form_cell.settings.options == ["a", "b", "x", "y"]
