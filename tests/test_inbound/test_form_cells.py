@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from IPython.core.interactiveshell import InteractiveShell
 
 from sidecar_comms.form_cells.base import (
@@ -204,3 +206,22 @@ class TestFormCellUpdates:
         form_cell.update(update_dict)
         assert form_cell.value == ["b", "x"]
         assert form_cell.settings.options == ["a", "b", "x", "y"]
+
+
+class TestFormCellObservers:
+    def test_callback_triggered_on_change(self):
+        """Test that a callback is triggered when the form cell value
+        is updated."""
+        data = {
+            "input_type": "checkboxes",
+            "model_variable_name": "test",
+            "value": ["a"],
+            "settings": {
+                "options": ["a", "b", "c"],
+            },
+        }
+        form_cell = parse_as_form_cell(data)
+        mock_callback = Mock()
+        form_cell.observe(mock_callback)
+        form_cell.value = ["b"]
+        mock_callback.assert_called_once_with({"name": "value", "old": ["a"], "new": ["b"]})
