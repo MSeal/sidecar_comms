@@ -23,6 +23,21 @@ def short_value(value: Any) -> str:
         return f"{value!r}"[:100]
 
 
+def get_memory_footprint(value: Any) -> Optional[int]:
+    """Returns the memory footprint of a value."""
+    try:
+        return sys.getsizeof(value)
+    except Exception:
+        pass
+
+    # may be a pandas object
+    # TODO: add extra pandas object handlers
+    try:
+        return value.memory_usage().sum()
+    except Exception:
+        pass
+
+
 def get_kernel_variables(
     skip_prefixes: list = None, ipython_shell: Optional[InteractiveShell] = None
 ):
@@ -47,7 +62,7 @@ def get_kernel_variables(
             "name": name,
             "type": type(value).__name__,
             "size": len(value) if hasattr(value, "__len__") else 1,
-            "size_bytes": sys.getsizeof(value),
+            "size_bytes": get_memory_footprint(value),
             "value": short_value(value),
         }
     return variable_types
