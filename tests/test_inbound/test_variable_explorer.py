@@ -1,6 +1,6 @@
 from IPython.core.interactiveshell import InteractiveShell
 
-from sidecar_comms.handlers.variable_explorer import VariableModel, get_kernel_variables
+from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 
 
 class TestGetKernelVariables:
@@ -66,7 +66,4 @@ class TestGetKernelVariables:
         assert variables["qux"]["name"] == "qux"
         assert variables["qux"]["type"] == "str"
         assert variables["qux"]["size"] == 15000
-        assert (
-            variables["qux"]["value"]
-            == VariableModel(name=variable_name, value=variable_value).sample_value
-        )
+        assert variables["qux"]["value"] == variable_sample_value(variable_value)
