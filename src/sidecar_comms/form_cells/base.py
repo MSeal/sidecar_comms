@@ -225,7 +225,6 @@ model_union = Union[
 FormCell = Annotated[model_union, Field(discriminator="input_type")]
 # we don't have any other way to check whether an `input_type` value is valid
 valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
-default_model_callbacks = ["_sync_sidecar", "_on_value_update"]
 
 
 def parse_as_form_cell(data: dict) -> FormCell:
