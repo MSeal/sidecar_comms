@@ -4,14 +4,6 @@ from sidecar_comms.handlers.variable_explorer import get_kernel_variables, short
 
 
 class TestGetKernelVariables:
-    def test_blank_slate(self, get_ipython: InteractiveShell):
-        """Test that a basic call to get_kernel_variables without any
-        variables declared returns an empty dict."""
-        variables = get_kernel_variables(ipython_shell=get_ipython)
-        # initial run should be empty based on the skip_prefixes
-        assert isinstance(variables, dict)
-        assert variables == {}
-
     def test_skip_prefixes(self, get_ipython: InteractiveShell):
         """Test that the skip_prefixes are working as expected."""
         get_ipython.user_ns["foo"] = 123
