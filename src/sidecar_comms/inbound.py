@@ -5,13 +5,16 @@ Comm target registration and message handling for inbound messages.
 import traceback
 from typing import Optional
 
-from deepmerge import always_merger
 from ipykernel.comm import Comm
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
-from sidecar_comms.handlers.main import get_kernel_variables, rename_kernel_variable
+from sidecar_comms.handlers.variable_explorer import (
+    get_kernel_variables,
+    rename_kernel_variable,
+    set_kernel_variable,
+)
 from sidecar_comms.models import CommMessage
 
 
@@ -74,21 +77,12 @@ def handle_msg(
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        # deep merge the original form cell with the update data
-        update_data = always_merger.merge(form_cell.dict(), data)
-        # convert back to one of our FormCell types
-        updated_form_cell = parse_as_form_cell(update_data)
-        # TODO: migrate the observers from previous form cell to new one
-        # updated_form_cell._observers = form_cell._observers
-        # send a comm back to the sidecar to update form cell tracking
+        form_cell.update(data)
         msg = CommMessage(
-            body=updated_form_cell.dict(),
+            body=form_cell.dict(),
             handler="update_form_cell",
         )
         comm.send(msg.dict())
-
-        FORM_CELL_CACHE[form_cell_id] = updated_form_cell
-        get_ipython().user_ns[data["model_variable_name"]] = updated_form_cell
 
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
@@ -108,5 +102,4 @@ def handle_msg(
     if inbound_msg == "assign_value_variable":
         form_cell_id = data["form_cell_id"]
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        value_variable_name = data["value_variable_name"]
-        form_cell._update_value_variable(value_variable_name)
+        set_kernel_variable(data["value_variable_name"], form_cell.value)

@@ -31,12 +31,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
+from sidecar_comms.handlers.variable_explorer import set_kernel_variable
 from sidecar_comms.outbound import SidecarComm, comm_manager
 
 FORM_CELL_CACHE: Dict[str, "FormCellBase"] = {}
@@ -51,10 +51,13 @@ class ExecutionTriggerBehavior(str, enum.Enum):
 class FormCellBase(ObservableModel):
     """
     Base class for form cells.
-     - registers the class instance in the FORM_CELL_CACHE
+     - registers the class instance to the FORM_CELL_CACHE
      - makes sure comm is open between sidecar and kernel
      - when repr'd, override the ipython display handler and instead send a comm message so
-       that the sidecar will create a cell metadata delta that switches the cell type
+       that the sidecar can handle `display_form_cell`
+
+    Should not be used directly, but instead used as a base class for other form cell
+    models declared below.
     """
 
     _comm: SidecarComm = PrivateAttr()
@@ -69,7 +72,10 @@ class FormCellBase(ObservableModel):
         ExecutionTriggerBehavior.change_variable_only
     )
 
-    def __init__(self, **data):
+    # only used for tests
+    _ipy: Optional[InteractiveShell] = PrivateAttr()
+
+    def __init__(self, ipython_shell: Optional[InteractiveShell] = None, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
@@ -82,10 +88,15 @@ class FormCellBase(ObservableModel):
         self.value_variable_name = (
             data.get("value_variable_name") or f"{self.model_variable_name}_value"
         )
-        self._update_value_variable()
+        self._ipy = ipython_shell
+        set_kernel_variable(
+            self.value_variable_name,
+            self.value,
+            ipython_shell=self._ipy,
+        )
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
+        props = ", ".join(f"{k}={v!r}" for k, v in self.dict(exclude={"id"}).items())
         return f"<{self.__class__.__name__} {props}>"
 
     def _sync_sidecar(self, change: Change):
@@ -95,21 +106,32 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _on_value_update(self, change: Change) -> None:
-        # not sending `change` since the value is already updated,
-        # just syncing the value variable
-        self._update_value_variable()
-
-    def _update_value_variable(
-        self,
-        ipython_shell: Optional[InteractiveShell] = None,
-    ) -> None:
-        ipython = ipython_shell or get_ipython()
-        ipython.user_ns[self.value_variable_name] = self.value
+        """Update the kernel variable when the .value changes
+        based on the associated .value_variable_name.
+        """
+        set_kernel_variable(
+            self.value_variable_name,
+            change.new,
+            ipython_shell=self._ipy,
+        )
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
         self._comm.send(handler="display_form_cell", body=self.dict())
         print(self.__repr__())
+
+    def update(self, data: dict) -> None:
+        """Set attributes on a form cell from a dict of values.
+
+        NOTE: for any deep merging beyond or deeper than `settings`, we will
+        need to revisit/rethink this. For now, we only get top-level changes
+        and `settings` changes that are one level deep."""
+        for name, value in data.items():
+            if name == "settings":
+                for setting_name, setting_value in value.items():
+                    setattr(self.settings, setting_name, setting_value)
+                continue
+            setattr(self, name, value)
 
 
 # --- Specific models ---
@@ -149,21 +171,20 @@ class OptionsSettings(ObservableModel):
         """Make sure values are a unique list of strings."""
         if not isinstance(value, list):
             value = [value]
-        value = list(set(value))
         return value
 
 
 class Dropdown(FormCellBase):
     input_type: Literal["dropdown"] = "dropdown"
     value: str = ""
-    variable_type: Union[str, dict]
+    variable_type: Union[str, dict] = ""
     settings: OptionsSettings = Field(default_factory=OptionsSettings)
 
 
 class Checkboxes(FormCellBase):
     input_type: Literal["checkboxes"] = "checkboxes"
     value: List[str] = Field(default_factory=list)
-    variable_type: Union[str, dict]
+    variable_type: Union[str, dict] = ""
     settings: OptionsSettings = Field(default_factory=OptionsSettings)
 
 
@@ -178,8 +199,13 @@ class Text(FormCellBase):
     settings: TextSettings = Field(default_factory=TextSettings)
 
 
+class CustomSettings(ObservableModel, extra=Extra.allow):
+    pass
+
+
 class Custom(FormCellBase, extra=Extra.allow):
     input_type: Literal["custom"] = "custom"
+    settings: CustomSettings = Field(default_factory=CustomSettings)
 
     def __repr__(self):
         return self.model_variable_name.title() + super().__repr__()
