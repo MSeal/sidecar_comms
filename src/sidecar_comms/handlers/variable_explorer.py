@@ -47,6 +47,7 @@ def get_kernel_variables(
             "name": name,
             "type": type(value).__name__,
             "size": len(value) if hasattr(value, "__len__") else 1,
+            "size_bytes": sys.getsizeof(value),
             "value": short_value(value),
         }
     return variable_types
