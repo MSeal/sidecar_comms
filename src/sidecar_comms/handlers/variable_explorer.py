@@ -6,36 +6,63 @@ from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 
 
-def short_value(value: Any) -> str:
-    """Returns a short representation of a value."""
-    if isinstance(value, list):
-        return value[:5]
-    if isinstance(value, dict):
-        return value.keys()
-    if sys.getsizeof(value) > 1000:
-        return f"{value!r}"[:100] + "..."
+class VariableModel:
+    name: str
+    value: Any
 
-    try:
-        json.dumps(value)
-        return value
-    except Exception:
-        # non-JSON serializable
-        return f"{value!r}"[:100]
+    def __init__(self, name: str, value: Any):
+        self.name = name
+        self.value = value
 
+    @property
+    def type(self):
+        return type(self.value).__name__
 
-def get_memory_footprint(value: Any) -> Optional[int]:
-    """Returns the memory footprint of a value."""
-    try:
-        return sys.getsizeof(value)
-    except Exception:
-        pass
+    @property
+    def size(self):
+        if hasattr(self.value, "__len__"):
+            return len(self.value)
+        if hasattr(self.value, "size"):
+            return self.value.size
 
-    # may be a pandas object
-    # TODO: add extra pandas object handlers
-    try:
-        return value.memory_usage().sum()
-    except Exception:
-        pass
+    @property
+    def size_bytes(self):
+        try:
+            return sys.getsizeof(self.value)
+        except Exception:
+            pass
+        # may be a pandas object
+        # TODO: add extra pandas object handlers
+        try:
+            return self.value.memory_usage().sum()
+        except Exception:
+            pass
+
+    @property
+    def sample_value(self):
+        """Returns a short representation of a value."""
+        if isinstance(self.value, list):
+            return self.value[:5]
+        if isinstance(self.value, dict):
+            return self.value.keys()
+        if self.size_bytes > 1000:
+            return f"{self.value!r}"[:1000] + "..."
+
+        try:
+            json.dumps(self.value)
+            return self.value
+        except Exception:
+            # non-JSON serializable
+            return f"{self.value!r}"[:1000]
+
+    def dict(self) -> dict:
+        return {
+            "name": self.name,
+            "value": self.sample_value,
+            "type": self.type,
+            "size": self.size,
+            "size_bytes": self.size_bytes,
+        }
 
 
 def get_kernel_variables(
@@ -58,13 +85,10 @@ def get_kernel_variables(
     for name, value in variables.items():
         if name.startswith(tuple(skip_prefixes)):
             continue
-        variable_types[name] = {
-            "name": name,
-            "type": type(value).__name__,
-            "size": len(value) if hasattr(value, "__len__") else 1,
-            "size_bytes": get_memory_footprint(value),
-            "value": short_value(value),
-        }
+        variable_types[name] = VariableModel(
+            name=name,
+            value=value,
+        ).dict()
     return variable_types
 
 
