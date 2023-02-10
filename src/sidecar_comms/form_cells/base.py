@@ -33,7 +33,6 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
-from pydantic.utils import deep_update
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -225,21 +224,15 @@ def parse_as_form_cell(data: dict) -> FormCell:
 
 
 def update_form_cell(form_cell: FormCell, data: dict):
-    """Copy a form cell, perform an update from a dictionary, and map any existing observers."""
-    update_data: dict = deep_update(form_cell.dict(), data)
-    # convert back to one of our FormCell types
-    updated_form_cell = parse_as_form_cell(update_data)
-    # map the original observers to the new object
-    updated_form_cell = copy_custom_observers(form_cell, updated_form_cell)
-    return updated_form_cell
+    """Set attributes on a form cell from a dict of values.
 
-
-def copy_custom_observers(form_cell: FormCell, other_form_cell: FormCell) -> FormCell:
-    """Copies non-default observers from one form cell to another."""
-    for property, observers in form_cell._observers.items():
-        for observer in observers:
-            if observer.fn.__name__ in default_model_callbacks:
-                # these are hooked into the original instances
-                continue
-            other_form_cell.observe(observer.fn, names=[property])
-    return other_form_cell
+    NOTE: for any deep merging beyond or deeper than `settings`, we will
+    need to revisit/rethink this. For now, we only get top-level changes
+    and `settings` changes that are one level deep."""
+    for name, value in data.items():
+        if name == "settings":
+            for setting_name, setting_value in value.items():
+                setattr(form_cell.settings, setting_name, setting_value)
+            continue
+        setattr(form_cell, name, value)
+    return form_cell
