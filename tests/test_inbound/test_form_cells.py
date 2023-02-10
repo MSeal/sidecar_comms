@@ -127,3 +127,39 @@ class TestParseFormCell:
         assert form_cell.foo == "bar"
         assert form_cell.settings.abc == "def"
         assert isinstance(form_cell, Custom)
+
+
+class TestFormCellSetup:
+    def test_value_variable_created(self, get_ipython: InteractiveShell):
+        """Test that a value variable is created and available in the
+        user namespace when a form cell is created."""
+        data = {
+            "input_type": "text",
+            "model_variable_name": "test",
+            "value": "test",
+            "settings": {
+                "min_length": 0,
+                "max_length": 1000,
+            },
+            "ipython_shell": get_ipython,
+        }
+        form_cell = parse_as_form_cell(data)
+        assert form_cell.value_variable_name == "test_value"
+        assert "test_value" in get_ipython.user_ns
+
+    def test_value_variable_updated(self, get_ipython: InteractiveShell):
+        """Test that a value variable is updated when the form cell value
+        is updated."""
+        data = {
+            "input_type": "text",
+            "model_variable_name": "test",
+            "value": "test",
+            "settings": {
+                "min_length": 0,
+                "max_length": 1000,
+            },
+            "ipython_shell": get_ipython,
+        }
+        form_cell = parse_as_form_cell(data)
+        form_cell.value = "new value"
+        assert get_ipython.user_ns["test_value"] == "new value"
