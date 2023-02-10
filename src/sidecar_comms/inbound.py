@@ -9,7 +9,7 @@ from ipykernel.comm import Comm
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 
-from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell, update_form_cell
+from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
 from sidecar_comms.handlers.variable_explorer import (
     get_kernel_variables,
     rename_kernel_variable,
