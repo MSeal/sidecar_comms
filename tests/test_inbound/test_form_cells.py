@@ -8,6 +8,7 @@ from sidecar_comms.form_cells.base import (
     Slider,
     Text,
     parse_as_form_cell,
+    update_form_cell,
 )
 
 
@@ -163,3 +164,44 @@ class TestFormCellSetup:
         form_cell = parse_as_form_cell(data)
         form_cell.value = "new value"
         assert get_ipython.user_ns["test_value"] == "new value"
+
+
+class TestFormCellUpdates:
+    def test_update_dict_settings(self):
+        """Test that updating a form cell with a nested dictionary
+        updates the settings without dropping existing settings
+        or altering the original model structure."""
+        data = {
+            "input_type": "checkboxes",
+            "model_variable_name": "test",
+            "value": ["a"],
+            "settings": {
+                "options": ["a", "b", "c"],
+            },
+        }
+        form_cell = parse_as_form_cell(data)
+        update_dict = {"settings": {"options": ["a", "b", "x", "y"]}}
+        updated_form_cell = update_form_cell(form_cell, update_dict)
+        assert updated_form_cell.value == ["a"]
+        assert updated_form_cell.settings.options == ["a", "b", "x", "y"]
+
+    def test_update_dict_value_settings(self):
+        """Test that updating a form cell with a nested dictionary
+        updates the settings without dropping existing settings
+        or altering the original model structure."""
+        data = {
+            "input_type": "checkboxes",
+            "model_variable_name": "test",
+            "value": ["a"],
+            "settings": {
+                "options": ["a", "b", "c"],
+            },
+        }
+        form_cell = parse_as_form_cell(data)
+        update_dict = {
+            "settings": {"options": ["a", "b", "x", "y"]},
+            "value": ["b", "x"],
+        }
+        updated_form_cell = update_form_cell(form_cell, update_dict)
+        assert updated_form_cell.value == ["b", "x"]
+        assert updated_form_cell.settings.options == ["a", "b", "x", "y"]
