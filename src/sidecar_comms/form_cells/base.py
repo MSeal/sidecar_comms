@@ -105,6 +105,9 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _on_value_update(self, change: Change) -> None:
+        """Update the kernel variable when the .value changes
+        based on the associated .value_variable_name.
+        """
         set_kernel_variable(
             self.value_variable_name,
             change.new,
