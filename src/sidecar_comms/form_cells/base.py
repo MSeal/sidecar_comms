@@ -131,7 +131,7 @@ class FormCellBase(ObservableModel):
                 for setting_name, setting_value in value.items():
                     setattr(self.settings, setting_name, setting_value)
                 continue
-        setattr(self, name, value)
+            setattr(self, name, value)
 
 
 # --- Specific models ---
