@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 class VariableModel(BaseModel):
     name: str
-    sample_value: Any
+    sample_value: Any  # may be the full value if small enough, only truncated for larger values
     type: str
     size: Optional[int]
     size_bytes: Optional[int]
@@ -42,6 +42,8 @@ def variable_size_bytes(value: Any) -> Optional[int]:
 def variable_sample_value(value: Any) -> Any:
     """Returns a short representation of a value."""
     if isinstance(value, list):
+        # TODO: come back to this and maybe recursively check
+        # items in container
         return value[:5]
     if isinstance(value, dict):
         return value.keys()
