@@ -1,3 +1,4 @@
+import json
 import sys
 from typing import Any, Optional
 
@@ -13,7 +14,13 @@ def short_value(value: Any) -> str:
         return value.keys()
     if sys.getsizeof(value) > 1000:
         return f"{value!r}"[:100] + "..."
-    return value
+
+    try:
+        json.dumps(value)
+        return value
+    except Exception:
+        # non-JSON serializable
+        return f"{value!r}"[:100]
 
 
 def get_kernel_variables(
