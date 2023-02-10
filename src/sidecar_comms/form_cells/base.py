@@ -120,6 +120,19 @@ class FormCellBase(ObservableModel):
         self._comm.send(handler="display_form_cell", body=self.dict())
         print(self.__repr__())
 
+    def update(self, data: dict) -> None:
+        """Set attributes on a form cell from a dict of values.
+
+        NOTE: for any deep merging beyond or deeper than `settings`, we will
+        need to revisit/rethink this. For now, we only get top-level changes
+        and `settings` changes that are one level deep."""
+        for name, value in data.items():
+            if name == "settings":
+                for setting_name, setting_value in value.items():
+                    setattr(self.settings, setting_name, setting_value)
+                continue
+        setattr(self, name, value)
+
 
 # --- Specific models ---
 class Datetime(FormCellBase):
@@ -221,18 +234,3 @@ def parse_as_form_cell(data: dict) -> FormCell:
     if data["input_type"] not in valid_model_input_types:
         data["input_type"] = "custom"
     return parse_obj_as(FormCell, data)
-
-
-def update_form_cell(form_cell: FormCell, data: dict):
-    """Set attributes on a form cell from a dict of values.
-
-    NOTE: for any deep merging beyond or deeper than `settings`, we will
-    need to revisit/rethink this. For now, we only get top-level changes
-    and `settings` changes that are one level deep."""
-    for name, value in data.items():
-        if name == "settings":
-            for setting_name, setting_value in value.items():
-                setattr(form_cell.settings, setting_name, setting_value)
-            continue
-        setattr(form_cell, name, value)
-    return form_cell

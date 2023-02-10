@@ -77,15 +77,12 @@ def handle_msg(
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        updated_form_cell = update_form_cell(form_cell, data)
+        form_cell.update(data)
         msg = CommMessage(
-            body=updated_form_cell.dict(),
+            body=form_cell.dict(),
             handler="update_form_cell",
         )
         comm.send(msg.dict())
-
-        FORM_CELL_CACHE[form_cell_id] = updated_form_cell
-        get_ipython().user_ns[data["model_variable_name"]] = updated_form_cell
 
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
