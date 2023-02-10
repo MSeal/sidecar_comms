@@ -4,65 +4,65 @@ from typing import Any, Optional
 
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
+from pydantic import BaseModel
 
 
-class VariableModel:
+class VariableModel(BaseModel):
     name: str
     value: Any
+    type: str
+    size: Optional[int]
+    size_bytes: Optional[int]
 
-    def __init__(self, name: str, value: Any):
-        self.name = name
-        self.value = value
 
-    @property
-    def type(self):
-        return type(self.value).__name__
+def variable_type(value: Any) -> str:
+    return type(value).__name__
 
-    @property
-    def size(self):
-        if hasattr(self.value, "__len__"):
-            return len(self.value)
-        if hasattr(self.value, "size"):
-            return self.value.size
 
-    @property
-    def size_bytes(self):
-        try:
-            return sys.getsizeof(self.value)
-        except Exception:
-            pass
-        # may be a pandas object
-        # TODO: add extra pandas object handlers
-        try:
-            return self.value.memory_usage().sum()
-        except Exception:
-            pass
+def variable_size(value: Any) -> Optional[int]:
+    if hasattr(value, "__len__"):
+        return len(value)
+    if hasattr(value, "size"):
+        return value.size
 
-    @property
-    def sample_value(self):
-        """Returns a short representation of a value."""
-        if isinstance(self.value, list):
-            return self.value[:5]
-        if isinstance(self.value, dict):
-            return self.value.keys()
-        if self.size_bytes > 1000:
-            return f"{self.value!r}"[:1000] + "..."
 
-        try:
-            json.dumps(self.value)
-            return self.value
-        except Exception:
-            # non-JSON serializable
-            return f"{self.value!r}"[:1000]
+def variable_size_bytes(value: Any) -> Optional[int]:
+    try:
+        return sys.getsizeof(value)
+    except Exception:
+        pass
+    # may be a pandas object
+    # TODO: add extra pandas object handlers
+    try:
+        return value.memory_usage().sum()
+    except Exception:
+        pass
 
-    def dict(self) -> dict:
-        return {
-            "name": self.name,
-            "value": self.sample_value,
-            "type": self.type,
-            "size": self.size,
-            "size_bytes": self.size_bytes,
-        }
+
+def variable_sample_value(value: Any) -> Any:
+    """Returns a short representation of a value."""
+    if isinstance(value, list):
+        return value[:5]
+    if isinstance(value, dict):
+        return value.keys()
+    if variable_size_bytes(value) > 1000:
+        return f"{value!r}"[:1000] + "..."
+    try:
+        json.dumps(value)
+        return value
+    except Exception:
+        # non-JSON serializable
+        return f"{value!r}"[:1000]
+
+
+def variable_to_model(name: str, value: Any) -> VariableModel:
+    return VariableModel(
+        name=name,
+        value=variable_sample_value(value),
+        type=variable_type(value),
+        size=variable_size(value),
+        size_bytes=variable_size_bytes(value),
+    )
 
 
 def get_kernel_variables(
@@ -85,10 +85,8 @@ def get_kernel_variables(
     for name, value in variables.items():
         if name.startswith(tuple(skip_prefixes)):
             continue
-        variable_types[name] = VariableModel(
-            name=name,
-            value=value,
-        ).dict()
+        variable_model = variable_to_model(name=name, value=value)
+        variable_types[name] = variable_model.dict()
     return variable_types
 
 
