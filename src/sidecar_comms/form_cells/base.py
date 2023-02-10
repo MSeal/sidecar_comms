@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
+from pydantic.utils import deep_update
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -51,10 +52,13 @@ class ExecutionTriggerBehavior(str, enum.Enum):
 class FormCellBase(ObservableModel):
     """
     Base class for form cells.
-     - registers the class instance in the FORM_CELL_CACHE
+     - registers the class instance to the FORM_CELL_CACHE
      - makes sure comm is open between sidecar and kernel
      - when repr'd, override the ipython display handler and instead send a comm message so
-       that the sidecar will create a cell metadata delta that switches the cell type
+       that the sidecar can handle `display_form_cell`
+
+    Should not be used directly, but instead used as a base class for other form cell
+    models declared below.
     """
 
     _comm: SidecarComm = PrivateAttr()
@@ -91,7 +95,7 @@ class FormCellBase(ObservableModel):
         )
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v}" for k, v in self.dict(exclude={"id"}).items())
+        props = ", ".join(f"{k}={v!r}" for k, v in self.dict(exclude={"id"}).items())
         return f"<{self.__class__.__name__} {props}>"
 
     def _sync_sidecar(self, change: Change):
@@ -204,6 +208,7 @@ model_union = Union[
 FormCell = Annotated[model_union, Field(discriminator="input_type")]
 # we don't have any other way to check whether an `input_type` value is valid
 valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
+default_model_callbacks = ["_sync_sidecar", "_on_value_update"]
 
 
 def parse_as_form_cell(data: dict) -> FormCell:
@@ -212,3 +217,24 @@ def parse_as_form_cell(data: dict) -> FormCell:
     if data["input_type"] not in valid_model_input_types:
         data["input_type"] = "custom"
     return parse_obj_as(FormCell, data)
+
+
+def update_form_cell(form_cell: FormCell, data: dict):
+    """Copy a form cell, perform an update from a dictionary, and map any existing observers."""
+    update_data: dict = deep_update(form_cell.dict(), data)
+    # convert back to one of our FormCell types
+    updated_form_cell = parse_as_form_cell(update_data)
+    # map the original observers to the new object
+    updated_form_cell = copy_custom_observers(form_cell, updated_form_cell)
+    return updated_form_cell
+
+
+def copy_custom_observers(form_cell: FormCell, other_form_cell: FormCell) -> FormCell:
+    """Copies non-default observers from one form cell to another."""
+    for property, observers in form_cell._observers.items():
+        for observer in observers:
+            if observer.fn.__name__ in default_model_callbacks:
+                # these are hooked into the original instances
+                continue
+            other_form_cell.observe(observer.fn, names=[property])
+    return other_form_cell

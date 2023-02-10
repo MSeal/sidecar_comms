@@ -8,9 +8,8 @@ from typing import Optional
 from ipykernel.comm import Comm
 from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
-from pydantic.utils import deep_update
 
-from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
+from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell, update_form_cell
 from sidecar_comms.handlers.main import (
     get_kernel_variables,
     rename_kernel_variable,
@@ -78,13 +77,7 @@ def handle_msg(
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
-        # deep merge the original form cell with the update data
-        update_data = deep_update(form_cell.dict(), data)
-        # convert back to one of our FormCell types
-        updated_form_cell = parse_as_form_cell(update_data)
-        # TODO: migrate the observers from previous form cell to new one
-        # updated_form_cell._observers = form_cell._observers
-        # send a comm back to the sidecar to update form cell tracking
+        updated_form_cell = update_form_cell(form_cell, data)
         msg = CommMessage(
             body=updated_form_cell.dict(),
             handler="update_form_cell",
