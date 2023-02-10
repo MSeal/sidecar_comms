@@ -62,7 +62,6 @@ class FormCellBase(ObservableModel):
     """
 
     _comm: SidecarComm = PrivateAttr()
-    _ipy: Optional[InteractiveShell] = PrivateAttr()
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     label: str = ""
     model_variable_name: str = ""
@@ -73,6 +72,9 @@ class FormCellBase(ObservableModel):
     execution_trigger_behavior: ExecutionTriggerBehavior = (
         ExecutionTriggerBehavior.change_variable_only
     )
+
+    # only used for tests
+    _ipy: Optional[InteractiveShell] = PrivateAttr()
 
     def __init__(self, ipython_shell: Optional[InteractiveShell] = None, **data):
         super().__init__(**data)
