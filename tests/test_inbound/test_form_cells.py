@@ -1,7 +1,5 @@
 from unittest.mock import Mock
 
-from IPython.core.interactiveshell import InteractiveShell
-
 from sidecar_comms.form_cells.base import (
     Checkboxes,
     Custom,
@@ -11,10 +9,11 @@ from sidecar_comms.form_cells.base import (
     Text,
     parse_as_form_cell,
 )
+from sidecar_comms.shell import get_ipython_shell
 
 
 class TestParseFormCell:
-    def test_parse_checkboxes(self, get_ipython: InteractiveShell):
+    def test_parse_checkboxes(self):
         data = {
             "input_type": "checkboxes",
             "model_variable_name": "test",
@@ -23,7 +22,6 @@ class TestParseFormCell:
             "settings": {
                 "options": ["test"],
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "checkboxes"
@@ -33,14 +31,13 @@ class TestParseFormCell:
         assert form_cell.settings.options == ["test"]
         assert isinstance(form_cell, Checkboxes)
 
-    def test_parse_datetime(self, get_ipython: InteractiveShell):
+    def test_parse_datetime(self):
         data = {
             "input_type": "datetime",
             "model_variable_name": "test",
             "value": "2023-01-01T00:00:00Z",
             "variable_type": "datetime",
             "settings": {},
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "datetime"
@@ -50,7 +47,7 @@ class TestParseFormCell:
         assert form_cell.settings == {}
         assert isinstance(form_cell, Datetime)
 
-    def test_parse_dropdown(self, get_ipython: InteractiveShell):
+    def test_parse_dropdown(self):
         data = {
             "input_type": "dropdown",
             "model_variable_name": "test",
@@ -59,7 +56,6 @@ class TestParseFormCell:
             "settings": {
                 "options": ["a", "b", "c"],
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "dropdown"
@@ -69,7 +65,7 @@ class TestParseFormCell:
         assert form_cell.settings.options == ["a", "b", "c"]
         assert isinstance(form_cell, Dropdown)
 
-    def test_parse_slider(self, get_ipython: InteractiveShell):
+    def test_parse_slider(self):
         data = {
             "input_type": "slider",
             "model_variable_name": "test",
@@ -80,7 +76,6 @@ class TestParseFormCell:
                 "max": 100,
                 "step": 1,
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "slider"
@@ -92,7 +87,7 @@ class TestParseFormCell:
         assert form_cell.settings.step == 1
         assert isinstance(form_cell, Slider)
 
-    def test_parse_text(self, get_ipython: InteractiveShell):
+    def test_parse_text(self):
         data = {
             "input_type": "text",
             "model_variable_name": "test",
@@ -101,7 +96,6 @@ class TestParseFormCell:
                 "min_length": 0,
                 "max_length": 1000,
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "text"
@@ -111,7 +105,7 @@ class TestParseFormCell:
         assert form_cell.settings.max_length == 1000
         assert isinstance(form_cell, Text)
 
-    def test_parse_custom(self, get_ipython: InteractiveShell):
+    def test_parse_custom(self):
         data = {
             "input_type": "my_new_form_cell_type",
             "model_variable_name": "test",
@@ -120,7 +114,6 @@ class TestParseFormCell:
             "settings": {
                 "abc": "def",
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "custom"
@@ -132,7 +125,7 @@ class TestParseFormCell:
 
 
 class TestFormCellSetup:
-    def test_value_variable_created(self, get_ipython: InteractiveShell):
+    def test_value_variable_created(self):
         """Test that a value variable is created and available in the
         user namespace when a form cell is created."""
         data = {
@@ -143,13 +136,12 @@ class TestFormCellSetup:
                 "min_length": 0,
                 "max_length": 1000,
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         assert form_cell.value_variable_name == "test_value"
-        assert "test_value" in get_ipython.user_ns
+        assert "test_value" in get_ipython_shell().user_ns
 
-    def test_value_variable_updated(self, get_ipython: InteractiveShell):
+    def test_value_variable_updated(self):
         """Test that a value variable is updated when the form cell value
         is updated."""
         data = {
@@ -160,11 +152,10 @@ class TestFormCellSetup:
                 "min_length": 0,
                 "max_length": 1000,
             },
-            "ipython_shell": get_ipython,
         }
         form_cell = parse_as_form_cell(data)
         form_cell.value = "new value"
-        assert get_ipython.user_ns["test_value"] == "new value"
+        assert get_ipython_shell().user_ns["test_value"] == "new value"
 
 
 class TestFormCellUpdates:
