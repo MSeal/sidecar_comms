@@ -2,17 +2,18 @@ import json
 import sys
 from typing import Any, Optional
 
-from IPython import get_ipython
-from IPython.core.interactiveshell import InteractiveShell
 from pydantic import BaseModel
+
+from sidecar_comms.shell import get_ipython_shell
 
 
 class VariableModel(BaseModel):
     name: str
-    sample_value: Any  # may be the full value if small enough, only truncated for larger values
     type: str
+    sample_value: Any  # may be the full value if small enough, only truncated for larger values
     size: Optional[int]
     size_bytes: Optional[int]
+    error: Optional[str]
 
 
 def variable_type(value: Any) -> str:
@@ -22,11 +23,10 @@ def variable_type(value: Any) -> str:
 def variable_size(value: Any) -> Optional[int]:
     if hasattr(value, "__len__"):
         return len(value)
-    if hasattr(value, "size"):
-        return value.size
 
 
 def variable_size_bytes(value: Any) -> Optional[int]:
+    """Returns the size of a variable in bytes."""
     try:
         return sys.getsizeof(value)
     except Exception:
@@ -58,21 +58,36 @@ def variable_sample_value(value: Any) -> Any:
 
 
 def variable_to_model(name: str, value: Any) -> VariableModel:
-    return VariableModel(
-        name=name,
-        sample_value=variable_sample_value(value),
-        type=variable_type(value),
-        size=variable_size(value),
-        size_bytes=variable_size_bytes(value),
-    )
+    """Gathers properties of a variable to send to the sidecar through
+    a variable explorer comm message.
+    Should always have `name` and `type` properties; `error` will show
+    conversion/inspection errors for size/size_bytes/sample_value.
+    """
+    props = {
+        "name": name,
+        "type": variable_type(value),
+        "sample_value": None,
+        "size": None,
+        "size_bytes": None,
+    }
+
+    try:
+        props.update(
+            {
+                "sample_value": variable_sample_value(value),
+                "size": variable_size(value),
+                "size_bytes": variable_size_bytes(value),
+            }
+        )
+    except Exception as e:
+        props["error"] = str(e)
+
+    return VariableModel(**props)
 
 
-def get_kernel_variables(
-    skip_prefixes: list = None, ipython_shell: Optional[InteractiveShell] = None
-):
+def get_kernel_variables(skip_prefixes: list = None):
     """Returns a list of variables in the kernel."""
-    ipython = ipython_shell or get_ipython()
-    variables = dict(ipython.user_ns)
+    variables = dict(get_ipython_shell().user_ns)
 
     skip_prefixes = skip_prefixes or [
         "_",
@@ -92,13 +107,9 @@ def get_kernel_variables(
     return variable_types
 
 
-def rename_kernel_variable(
-    old_name: str,
-    new_name: str,
-    ipython_shell: Optional[InteractiveShell] = None,
-) -> str:
+def rename_kernel_variable(old_name: str, new_name: str) -> str:
     """Renames a variable in the kernel."""
-    ipython = ipython_shell or get_ipython()
+    ipython = get_ipython_shell()
     try:
         if new_name:
             ipython.user_ns[new_name] = ipython.user_ns[old_name]
@@ -108,15 +119,10 @@ def rename_kernel_variable(
         return str(e)
 
 
-def set_kernel_variable(
-    name: str,
-    value: Any,
-    ipython_shell: Optional[InteractiveShell] = None,
-) -> str:
+def set_kernel_variable(name: str, value: Any) -> str:
     """Sets a variable in the kernel."""
-    ipython = ipython_shell or get_ipython()
     try:
-        ipython.user_ns[name] = value
+        get_ipython_shell().user_ns[name] = value
         return "success"
     except Exception as e:
         return str(e)
