@@ -5,10 +5,11 @@ from sidecar_comms.shell import get_ipython_shell
 class TestGetKernelVariables:
     def test_skip_prefixes(self):
         """Test that the skip_prefixes are working as expected."""
-        get_ipython_shell().user_ns["foo"] = 123
-        get_ipython_shell().user_ns["bar"] = 456
-        get_ipython_shell().user_ns["_baz"] = 789
-        get_ipython_shell().user_ns["SECRET_abc"] = 123
+        shell = get_ipython_shell()
+        shell.user_ns["foo"] = 123
+        shell.user_ns["bar"] = 456
+        shell.user_ns["_baz"] = 789
+        shell.user_ns["SECRET_abc"] = 123
         variables = get_kernel_variables(skip_prefixes=["_", "SECRET_"])
         # initial run should be empty based on the skip_prefixes
         assert isinstance(variables, dict)
