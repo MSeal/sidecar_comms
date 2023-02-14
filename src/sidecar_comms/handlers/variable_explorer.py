@@ -63,7 +63,6 @@ def variable_size_bytes(value: Any) -> Optional[int]:
         return sys.getsizeof(value)
     except Exception:
         pass
-
     # may be a pandas object
     # TODO: add extra pandas object handlers
     try:

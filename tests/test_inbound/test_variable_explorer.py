@@ -1,6 +1,6 @@
 from IPython.core.interactiveshell import InteractiveShell
 
-from sidecar_comms.handlers.variable_explorer import get_kernel_variables, short_value
+from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 
 
 class TestGetKernelVariables:
@@ -27,8 +27,8 @@ class TestGetKernelVariables:
         assert "foo" in variables
         assert variables["foo"]["name"] == "foo"
         assert variables["foo"]["type"] == "int"
-        assert variables["foo"]["size"] == 1
-        assert variables["foo"]["value"] == 123
+        assert variables["foo"]["size"] is None
+        assert variables["foo"]["sample_value"] == 123
 
     def test_list(self, get_ipython: InteractiveShell):
         """Test that a basic list variable is added to the variables
@@ -40,7 +40,7 @@ class TestGetKernelVariables:
         assert variables["bar"]["name"] == "bar"
         assert variables["bar"]["type"] == "list"
         assert variables["bar"]["size"] == 3
-        assert variables["bar"]["value"] == [1, 2, 3]
+        assert variables["bar"]["sample_value"] == [1, 2, 3]
 
     def test_dict(self, get_ipython: InteractiveShell):
         """Test that a basic dict variable is added to the variables
@@ -52,16 +52,18 @@ class TestGetKernelVariables:
         assert variables["baz"]["name"] == "baz"
         assert variables["baz"]["type"] == "dict"
         assert variables["baz"]["size"] == 4
-        assert variables["baz"]["value"] == {"a": 1, "b": 2, "c": 3, "d": 4}.keys()
+        assert variables["baz"]["sample_value"] == {"a": 1, "b": 2, "c": 3, "d": 4}.keys()
 
     def test_long_string(self, get_ipython: InteractiveShell):
         """Test that a long string variable is added to the variables
         response with the correct information."""
-        get_ipython.user_ns["qux"] = "ABC" * 5000
+        variable_name = "qux"
+        variable_value = "ABC" * 5000
+        get_ipython.user_ns[variable_name] = variable_value
         variables = get_kernel_variables(ipython_shell=get_ipython)
         # add a long string variable
         assert "qux" in variables
         assert variables["qux"]["name"] == "qux"
         assert variables["qux"]["type"] == "str"
         assert variables["qux"]["size"] == 15000
-        assert variables["qux"]["value"] == short_value("ABC" * 5000)
+        assert variables["qux"]["sample_value"] == variable_sample_value(variable_value)
