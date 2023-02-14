@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -10,7 +10,9 @@ from sidecar_comms.shell import get_ipython_shell
 class VariableModel(BaseModel):
     name: str
     type: str
+    module: Optional[str]
     sample_value: Any  # may be the full value if small enough, only truncated for larger values
+    shape: Optional[Tuple[int]]
     size: Optional[int]
     size_bytes: Optional[int]
     error: Optional[str]
@@ -21,8 +23,28 @@ def variable_type(value: Any) -> str:
 
 
 def variable_size(value: Any) -> Optional[int]:
+    """Returns the size (1-dimensional; length) of a variable."""
     if hasattr(value, "__len__"):
         return len(value)
+    if (size := getattr(value, "size", None)) is None:
+        return
+    if isinstance(size, int):
+        return size
+    if isinstance(size, tuple):
+        return size[0]
+
+
+def variable_shape(value: Any) -> Optional[int]:
+    """Returns the shape (n-dimensional; rows, columns, ...) of a variable."""
+    if (shape := getattr(value, "shape", None)) is None:
+        return
+    if not isinstance(shape, tuple):
+        return
+    if not shape:
+        return
+    if not isinstance(shape[0], int):
+        return
+    return shape
 
 
 def variable_size_bytes(value: Any) -> Optional[int]:
@@ -63,26 +85,27 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     Should always have `name` and `type` properties; `error` will show
     conversion/inspection errors for size/size_bytes/sample_value.
     """
-    props = {
+    basic_props = {
         "name": name,
         "type": variable_type(value),
-        "sample_value": None,
-        "size": None,
-        "size_bytes": None,
+        "module": getattr(value, "__module__", None),
     }
 
+    # in the event we run into any parsing/validation errors,
+    # we'll still send the variable model with basic properties
+    # and an error message
     try:
-        props.update(
-            {
-                "sample_value": variable_sample_value(value),
-                "size": variable_size(value),
-                "size_bytes": variable_size_bytes(value),
-            }
+        return VariableModel(
+            sample_value=variable_sample_value(value),
+            shape=variable_shape(value),
+            size=variable_size(value),
+            size_bytes=variable_size_bytes(value),
+            **basic_props,
         )
     except Exception as e:
-        props["error"] = str(e)
+        basic_props["error"] = str(e)
 
-    return VariableModel(**props)
+    return VariableModel(**basic_props)
 
 
 def get_kernel_variables(skip_prefixes: list = None):
