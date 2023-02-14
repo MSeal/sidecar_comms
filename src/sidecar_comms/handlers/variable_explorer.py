@@ -10,12 +10,21 @@ from sidecar_comms.shell import get_ipython_shell
 class VariableModel(BaseModel):
     name: str
     type: str
+    docstring: Optional[str]
     module: Optional[str]
     sample_value: Any  # may be the full value if small enough, only truncated for larger values
-    shape: Optional[Tuple[int]]
+    shape: Optional[Tuple]
     size: Optional[int]
     size_bytes: Optional[int]
     error: Optional[str]
+
+
+def variable_docstring(value: Any) -> Optional[str]:
+    if (doc := getattr(value, "__doc__", None)) is None:
+        return
+    if not isinstance(doc, str):
+        return
+    return doc[:5000]
 
 
 def variable_type(value: Any) -> str:
@@ -87,6 +96,7 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     """
     basic_props = {
         "name": name,
+        "docstring": variable_docstring(value),
         "type": variable_type(value),
         "module": getattr(value, "__module__", None),
     }
