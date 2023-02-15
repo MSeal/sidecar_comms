@@ -2,9 +2,9 @@ import json
 import sys
 from typing import Any, Optional, Tuple
 
-from IPython import get_ipython
-from IPython.core.interactiveshell import InteractiveShell
 from pydantic import BaseModel
+
+from sidecar_comms.shell import get_ipython_shell
 
 
 class VariableModel(BaseModel):
@@ -119,12 +119,9 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     return VariableModel(**basic_props)
 
 
-def get_kernel_variables(
-    skip_prefixes: list = None, ipython_shell: Optional[InteractiveShell] = None
-):
+def get_kernel_variables(skip_prefixes: list = None):
     """Returns a list of variables in the kernel."""
-    ipython = ipython_shell or get_ipython()
-    variables = dict(ipython.user_ns)
+    variables = dict(get_ipython_shell().user_ns)
 
     skip_prefixes = skip_prefixes or [
         "_",
@@ -144,13 +141,9 @@ def get_kernel_variables(
     return variable_types
 
 
-def rename_kernel_variable(
-    old_name: str,
-    new_name: str,
-    ipython_shell: Optional[InteractiveShell] = None,
-) -> str:
+def rename_kernel_variable(old_name: str, new_name: str) -> str:
     """Renames a variable in the kernel."""
-    ipython = ipython_shell or get_ipython()
+    ipython = get_ipython_shell()
     try:
         if new_name:
             ipython.user_ns[new_name] = ipython.user_ns[old_name]
@@ -160,15 +153,10 @@ def rename_kernel_variable(
         return str(e)
 
 
-def set_kernel_variable(
-    name: str,
-    value: Any,
-    ipython_shell: Optional[InteractiveShell] = None,
-) -> str:
+def set_kernel_variable(name: str, value: Any) -> str:
     """Sets a variable in the kernel."""
-    ipython = ipython_shell or get_ipython()
     try:
-        ipython.user_ns[name] = value
+        get_ipython_shell().user_ns[name] = value
         return "success"
     except Exception as e:
         return str(e)

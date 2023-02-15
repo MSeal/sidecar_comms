@@ -75,7 +75,7 @@ class FormCellBase(ObservableModel):
     # only used for tests
     _ipy: Optional[InteractiveShell] = PrivateAttr()
 
-    def __init__(self, ipython_shell: Optional[InteractiveShell] = None, **data):
+    def __init__(self, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
         FORM_CELL_CACHE[self.id] = self
@@ -88,12 +88,7 @@ class FormCellBase(ObservableModel):
         self.value_variable_name = (
             data.get("value_variable_name") or f"{self.model_variable_name}_value"
         )
-        self._ipy = ipython_shell
-        set_kernel_variable(
-            self.value_variable_name,
-            self.value,
-            ipython_shell=self._ipy,
-        )
+        set_kernel_variable(self.value_variable_name, self.value)
 
     def __repr__(self):
         props = ", ".join(f"{k}={v!r}" for k, v in self.dict(exclude={"id"}).items())
@@ -109,11 +104,7 @@ class FormCellBase(ObservableModel):
         """Update the kernel variable when the .value changes
         based on the associated .value_variable_name.
         """
-        set_kernel_variable(
-            self.value_variable_name,
-            change.new,
-            ipython_shell=self._ipy,
-        )
+        set_kernel_variable(self.value_variable_name, change.new)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
