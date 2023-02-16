@@ -149,10 +149,13 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
 
 
 def json_clean(value: Any, max_length: Optional[int] = None) -> str:
-    """Converts a variable data dictionary to a JSON string."""
+    """Ensures a value is JSON serializable, converting to a string if necessary.
+
+    Recursively cleans values of dictionaries, and items in lists, sets, and tuples
+    if necessary.
+    """
     max_length = max_length or MAX_STRING_LENGTH
 
-    # recursively clean if necessary
     if isinstance(value, dict):
         value = {k: json_clean(v) for k, v in value.items()}
     elif isinstance(value, tuple(CONTAINER_TYPES)):
