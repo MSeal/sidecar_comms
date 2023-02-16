@@ -54,11 +54,11 @@ def variable_size(value: Any) -> Optional[Union[int, tuple]]:
     For iterables, this returns the length / number of items.
     For matrix-like objects, this returns a tuple of the number of rows/columns, similar to .shape.
     """
-    if hasattr(value, "__len__"):
-        return len(value)
-
     if (shape := variable_shape(value)) is not None:
         return shape
+
+    if hasattr(value, "__len__"):
+        return len(value)
 
     if (size := getattr(value, "size", None)) is None:
         return
