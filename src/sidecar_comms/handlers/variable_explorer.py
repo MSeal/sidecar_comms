@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field
 
 from sidecar_comms.shell import get_ipython_shell
 
+MAX_STRING_LENGTH = 1000
+CONTAINER_TYPES = [list, set, frozenset, tuple]
+
 
 class VariableModel(BaseModel):
     name: str
@@ -79,12 +82,12 @@ def variable_size_bytes(value: Any) -> Optional[int]:
         pass
 
 
-def variable_sample_value(value: Any, max_length: int = 1000) -> Any:
+def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
     """Returns a short representation of a value."""
     sample_value = value
+    max_length = max_length or MAX_STRING_LENGTH
 
-    container_types = [list, set, frozenset, tuple]
-    if isinstance(value, tuple(container_types)):
+    if isinstance(value, tuple(CONTAINER_TYPES)):
         sample_items = [
             variable_sample_value(item, max_length=max_length) for item in list(value)[:5]
         ]
@@ -145,8 +148,17 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     return VariableModel(**basic_props)
 
 
-def variable_data_to_json(value: Any, max_length: int = 1000) -> str:
+def json_clean(value: Any, max_length: Optional[int] = None) -> str:
     """Converts a variable data dictionary to a JSON string."""
+    max_length = max_length or MAX_STRING_LENGTH
+
+    # recursively clean if necessary
+    if isinstance(value, dict):
+        value = {k: json_clean(v) for k, v in value.items()}
+    elif isinstance(value, tuple(CONTAINER_TYPES)):
+        container_type = type(value)
+        value = container_type([json_clean(v) for v in value])
+
     try:
         json.dumps(value)
         return value
@@ -175,9 +187,7 @@ def get_kernel_variables(skip_prefixes: list = None):
         if name.startswith(tuple(skip_prefixes)):
             continue
         variable_model = variable_to_model(name=name, value=value)
-        cleaned_variable_model_dict = {
-            k: variable_data_to_json(v) for k, v in variable_model.dict().items()
-        }
+        cleaned_variable_model_dict = {k: json_clean(v) for k, v in variable_model.dict().items()}
         variable_data[name] = cleaned_variable_model_dict
     return variable_data
 
