@@ -52,7 +52,7 @@ class TestGetKernelVariables:
         assert variables["baz"]["name"] == "baz"
         assert variables["baz"]["type"] == "dict"
         assert variables["baz"]["size"] == 4
-        assert variables["baz"]["sample_value"] == {"a": 1, "b": 2, "c": 3, "d": 4}.keys()
+        assert variables["baz"]["sample_value"] == {"a": 1, "b": 2, "c": 3, "d": 4}
 
     def test_long_string(self):
         """Test that a long string variable is added to the variables
