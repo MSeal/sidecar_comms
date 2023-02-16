@@ -2,7 +2,7 @@ import json
 import sys
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from sidecar_comms.shell import get_ipython_shell
 
@@ -15,6 +15,7 @@ class VariableModel(BaseModel):
     sample_value: Any  # may be the full value if small enough, only truncated for larger values
     size: Optional[Union[int, tuple]]
     size_bytes: Optional[int]
+    extra: dict = Field(default_factory=dict)
     error: Optional[str]
 
 
@@ -80,7 +81,7 @@ def variable_size_bytes(value: Any) -> Optional[int]:
 
 def variable_sample_value(value: Any, max_length: int = 1000) -> Any:
     """Returns a short representation of a value."""
-    sample_value = None
+    sample_value = value
 
     container_types = [list, set, frozenset, tuple]
     if isinstance(value, tuple(container_types)):
@@ -88,20 +89,30 @@ def variable_sample_value(value: Any, max_length: int = 1000) -> Any:
             variable_sample_value(item, max_length=max_length) for item in list(value)[:5]
         ]
         container_type = type(value)
+        # convert back to original type if we're only showing some items
         sample_value = container_type(sample_items)
 
-    elif isinstance(value, dict):
-        sample_value = value.keys()
+    if variable_size_bytes(value) > max_length:
+        if isinstance(value, dict):
+            sample_value = value.keys()
+        else:
+            sample_value = f"{value!r}"[:max_length] + "..."
 
-    elif variable_size_bytes(value) > max_length:
-        sample_value = f"{value!r}"[:max_length] + "..."
+    return sample_value
 
-    try:
-        json.dumps(sample_value)
-        return sample_value
-    except ValueError:
-        # can't JSON serialize; stringify it and move on
-        return f"{sample_value!r}"[:max_length]
+
+def variable_extra_properties(value: Any) -> Optional[dict]:
+    """Handles extracting/generating additional properties for a variable
+    based on supported types.
+    """
+    extra = {}
+
+    if variable_type(value) == "DataFrame":
+        extra["columns"] = list(value.columns)[:100]
+        extra["index"] = list(value.index)[:100]
+        extra["dtypes"] = dict(value.dtypes)
+
+    return extra
 
 
 def variable_to_model(name: str, value: Any) -> VariableModel:
@@ -125,12 +136,25 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
             sample_value=variable_sample_value(value),
             size=variable_size(value),
             size_bytes=variable_size_bytes(value),
+            extra=variable_extra_properties(value),
             **basic_props,
         )
     except Exception as e:
-        basic_props["error"] = str(e)
+        basic_props["error"] = f"{e!r}"
 
     return VariableModel(**basic_props)
+
+
+def variable_data_to_json(value: Any, max_length: int = 1000) -> str:
+    """Converts a variable data dictionary to a JSON string."""
+    try:
+        json.dumps(value)
+        return value
+    except (TypeError, ValueError):
+        # either one of these may appear:
+        # - TypeError: X is not JSON serializable
+        # - ValueError: Can't clean for JSON: X
+        return f"{value!r}"[:max_length]
 
 
 def get_kernel_variables(skip_prefixes: list = None):
@@ -146,13 +170,16 @@ def get_kernel_variables(skip_prefixes: list = None):
         "quit",
         "open",
     ]
-    variable_types = {}
+    variable_data = {}
     for name, value in variables.items():
         if name.startswith(tuple(skip_prefixes)):
             continue
         variable_model = variable_to_model(name=name, value=value)
-        variable_types[name] = variable_model.dict()
-    return variable_types
+        cleaned_variable_model_dict = {
+            k: variable_data_to_json(v) for k, v in variable_model.dict().items()
+        }
+        variable_data[name] = cleaned_variable_model_dict
+    return variable_data
 
 
 def rename_kernel_variable(old_name: str, new_name: str) -> str:
