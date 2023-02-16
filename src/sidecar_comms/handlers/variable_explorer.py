@@ -1,6 +1,6 @@
 import json
 import sys
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel
 
@@ -13,8 +13,7 @@ class VariableModel(BaseModel):
     docstring: Optional[str]
     module: Optional[str]
     sample_value: Any  # may be the full value if small enough, only truncated for larger values
-    shape: Optional[Tuple]
-    size: Optional[int]
+    size: Optional[Union[int, tuple]]
     size_bytes: Optional[int]
     error: Optional[str]
 
@@ -32,19 +31,7 @@ def variable_type(value: Any) -> str:
     return type(value).__name__
 
 
-def variable_size(value: Any) -> Optional[int]:
-    """Returns the size (1-dimensional; length) of a variable."""
-    if hasattr(value, "__len__"):
-        return len(value)
-    if (size := getattr(value, "size", None)) is None:
-        return
-    if isinstance(size, int):
-        return size
-    if isinstance(size, tuple):
-        return size[0]
-
-
-def variable_shape(value: Any) -> Optional[int]:
+def variable_shape(value: Any) -> Optional[tuple]:
     """Returns the shape (n-dimensional; rows, columns, ...) of a variable."""
     if (shape := getattr(value, "shape", None)) is None:
         return
@@ -55,6 +42,26 @@ def variable_shape(value: Any) -> Optional[int]:
     if not isinstance(shape[0], int):
         return
     return shape
+
+
+def variable_size(value: Any) -> Optional[Union[int, tuple]]:
+    """Returns the size of a variable.
+
+    For iterables, this returns the length / number of items.
+    For matrix-like objects, this returns a tuple of the number of rows/columns, similar to .shape.
+    """
+    if hasattr(value, "__len__"):
+        return len(value)
+
+    if (shape := variable_shape(value)) is not None:
+        return shape
+
+    if (size := getattr(value, "size", None)) is None:
+        return
+    if isinstance(size, int):
+        return size
+    if isinstance(size, tuple):
+        return size[0]
 
 
 def variable_size_bytes(value: Any) -> Optional[int]:
@@ -74,14 +81,18 @@ def variable_size_bytes(value: Any) -> Optional[int]:
 def variable_sample_value(value: Any, max_length: int = 1000) -> Any:
     """Returns a short representation of a value."""
     sample_value = None
-    if isinstance(value, (list, set, tuple)):
+
+    container_types = [list, set, frozenset, tuple]
+    if isinstance(value, tuple(container_types)):
         sample_items = [
             variable_sample_value(item, max_length=max_length) for item in list(value)[:5]
         ]
         container_type = type(value)
         sample_value = container_type(sample_items)
+
     elif isinstance(value, dict):
         sample_value = value.keys()
+
     elif variable_size_bytes(value) > max_length:
         sample_value = f"{value!r}"[:max_length] + "..."
 
@@ -112,7 +123,6 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     try:
         return VariableModel(
             sample_value=variable_sample_value(value),
-            shape=variable_shape(value),
             size=variable_size(value),
             size_bytes=variable_size_bytes(value),
             **basic_props,
