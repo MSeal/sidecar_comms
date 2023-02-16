@@ -73,20 +73,20 @@ def variable_size_bytes(value: Any) -> Optional[int]:
 
 def variable_sample_value(value: Any) -> Any:
     """Returns a short representation of a value."""
+    sample_value = None
     if isinstance(value, list):
-        # TODO: come back to this and maybe recursively check
-        # items in container
-        return value[:5]
-    if isinstance(value, dict):
-        return value.keys()
-    if variable_size_bytes(value) > 1000:
-        return f"{value!r}"[:1000] + "..."
+        sample_value = [variable_sample_value(item) for item in value[:5]]
+    elif isinstance(value, dict):
+        sample_value = value.keys()
+    elif variable_size_bytes(value) > 1000:
+        sample_value = f"{value!r}"[:1000] + "..."
+
     try:
-        json.dumps(value)
-        return value
-    except Exception:
-        # non-JSON serializable
-        return f"{value!r}"[:1000]
+        json.dumps(sample_value)
+        return sample_value
+    except ValueError:
+        # can't JSON serialize; stringify it and move on
+        return f"{sample_value!r}"[:5000]
 
 
 def variable_to_model(name: str, value: Any) -> VariableModel:
