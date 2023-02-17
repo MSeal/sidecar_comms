@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 from sidecar_comms.shell import get_ipython_shell
 
@@ -67,3 +69,52 @@ class TestGetKernelVariables:
         assert variables["qux"]["type"] == "str"
         assert variables["qux"]["size"] == 15000
         assert variables["qux"]["sample_value"] == variable_sample_value(variable_value)
+
+    def test_fn(self):
+        """Test that a variable assigned to a function is added to the variables
+        response with the correct information.
+        """
+
+        def foo():
+            pass
+
+        variable_name = "test_fn"
+        variable_value = foo
+        get_ipython_shell().user_ns[variable_name] = variable_value
+        variables = get_kernel_variables()
+        assert variable_name in variables
+        assert variables[variable_name]["name"] == variable_name
+        assert variables[variable_name]["type"] == "function"
+        assert variables[variable_name]["sample_value"].startswith("<function")
+
+    def test_fn_in_list(self):
+        """Test that a variable assigned to a function in a list is added
+        to the variables response with the correct information.
+        """
+
+        def foo():
+            pass
+
+        variable_name = "test_fn_in_list"
+        variable_value = [foo]
+        get_ipython_shell().user_ns[variable_name] = variable_value
+        variables = get_kernel_variables()
+        assert variable_name in variables
+        assert variables[variable_name]["name"] == variable_name
+        assert variables[variable_name]["type"] == "list"
+        assert isinstance(variables[variable_name]["sample_value"], list)
+        assert variables[variable_name]["sample_value"][0].startswith("<function")
+
+    def test_broken_property(self):
+        """Test that a variable with an unexpected/unhandled property type will
+        populate the `error` property in the VariableModel message.
+        """
+
+        class Foo:
+            def __len__(self):
+                raise Exception("I'm broken!")
+
+        get_ipython_shell().user_ns["test_dict"] = Foo()
+        variables = get_kernel_variables()
+        assert "test_dict" in variables
+        assert variables["test_dict"].get("error") is not None
