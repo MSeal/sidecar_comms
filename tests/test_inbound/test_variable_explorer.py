@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 from sidecar_comms.shell import get_ipython_shell
 
