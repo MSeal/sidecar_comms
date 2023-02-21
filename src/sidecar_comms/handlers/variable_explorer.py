@@ -52,16 +52,15 @@ def variable_string_repr(value: Any, max_length: Optional[int] = None) -> str:
     if PANDAS_INSTALLED and variable_type(value) == "DataFrame":
         # if any of these are set to custom values, we need to revert them to the
         # pandas defaults, otherwise the repr may take an unnecessarily long time
-        orig_max_rows = pd.get_option("display.max_rows")
-        orig_max_columns = pd.get_option("display.max_columns")
-        orig_max_colwidth = pd.get_option("display.max_colwidth")
-        pd.set_option("display.max_rows", 20)
-        pd.set_option("display.max_columns", 60)
-        pd.set_option("display.max_colwidth", 50)
-        string_repr = repr(value)
-        pd.set_option("display.max_rows", orig_max_rows)
-        pd.set_option("display.max_columns", orig_max_columns)
-        pd.set_option("display.max_colwidth", orig_max_colwidth)
+        with pd.option_context(
+            "display.max_rows",
+            60,
+            "display.max_columns",
+            20,
+            "display.max_colwidth",
+            50,
+        ):
+            string_repr = repr(value)
 
     else:
         string_repr = repr(value)
