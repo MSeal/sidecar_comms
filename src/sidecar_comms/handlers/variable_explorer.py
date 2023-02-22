@@ -6,13 +6,6 @@ from pydantic import BaseModel, Field
 
 from sidecar_comms.shell import get_ipython_shell
 
-try:
-    import pandas as pd
-
-    PANDAS_INSTALLED = True
-except ImportError:
-    PANDAS_INSTALLED = False
-
 MAX_STRING_LENGTH = 1000
 CONTAINER_TYPES = [list, set, frozenset, tuple]
 
@@ -40,32 +33,6 @@ def variable_docstring(value: Any) -> Optional[str]:
 
 def variable_type(value: Any) -> str:
     return type(value).__name__
-
-
-def variable_string_repr(value: Any, max_length: Optional[int] = None) -> str:
-    """Returns a string representation of a value.
-
-    If any custom data types or configurations need to be handled,
-    this is the place to do it.
-    """
-
-    if PANDAS_INSTALLED and variable_type(value) == "DataFrame":
-        # if any of these are set to custom values, we need to revert them to the
-        # pandas defaults, otherwise the repr may take an unnecessarily long time
-        with pd.option_context(
-            "display.max_rows",
-            60,
-            "display.max_columns",
-            20,
-            "display.max_colwidth",
-            50,
-        ):
-            string_repr = repr(value)
-
-    else:
-        string_repr = repr(value)
-
-    return string_repr[:max_length]
 
 
 def variable_shape(value: Any) -> Optional[tuple]:
@@ -132,7 +99,7 @@ def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
         if isinstance(value, dict):
             sample_value = value.keys()
         else:
-            sample_value = variable_string_repr(value, max_length) + "..."
+            sample_value = repr(value)[:max_length] + "..."
 
     return sample_value
 
@@ -202,7 +169,9 @@ def json_clean(value: Any, max_length: Optional[int] = None) -> str:
         # either one of these may appear:
         # - TypeError: X is not JSON serializable
         # - ValueError: Can't clean for JSON: X
-        return variable_string_repr(value, max_length)
+        # and we won't try to get a string repr here since that could
+        # potentially take a while depending on any custom __repr__ methods
+        return
 
 
 def get_kernel_variables(skip_prefixes: list = None):
