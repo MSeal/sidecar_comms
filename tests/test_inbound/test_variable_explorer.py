@@ -87,7 +87,8 @@ class TestGetKernelVariables:
         assert variables[variable_name]["name"] == variable_name
         assert variables[variable_name]["type"] == "function"
         assert variables[variable_name]["size"] is None
-        assert variables[variable_name]["sample_value"].startswith("<function")
+        # functions aren't JSON-serializable, so the sample value should be None
+        assert variables[variable_name]["sample_value"] is None
 
     def test_fn_in_list(self):
         """Test that a variable assigned to a function in a list is added
@@ -106,8 +107,8 @@ class TestGetKernelVariables:
         assert variables[variable_name]["type"] == "list"
         assert variables[variable_name]["size"] == 1
         assert isinstance(variables[variable_name]["sample_value"], list)
-        assert isinstance(variables[variable_name]["sample_value"][0], str)
-        assert variables[variable_name]["sample_value"][0].startswith("<function")
+        # functions aren't JSON-serializable, so the first item in the sample value should be None
+        assert variables[variable_name]["sample_value"][0] is None
 
     def test_broken_property(self):
         """Test that a variable with an unexpected/unhandled property type will
