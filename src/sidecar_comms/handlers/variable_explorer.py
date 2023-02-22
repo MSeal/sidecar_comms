@@ -113,7 +113,9 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
     if variable_type(value) == "DataFrame":
         extra["columns"] = list(value.columns)[:100]
         extra["index"] = list(value.index)[:100]
-        extra["dtypes"] = dict(value.dtypes)
+        # ensure we can still pass the string dtype through,
+        # since they aren't JSON serializable
+        extra["dtypes"] = {name: str(dtype) for name, dtype in dict(value.dtypes).items()}
 
     if variable_type(value) == "dict":
         extra["keys"] = list(value.keys())[:100]
