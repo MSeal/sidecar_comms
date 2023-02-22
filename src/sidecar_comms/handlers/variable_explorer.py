@@ -99,10 +99,7 @@ def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
         return
 
     if variable_size_bytes(sample_value) > max_length:
-        if isinstance(sample_value, dict):
-            sample_value = sample_value.keys()
-        else:
-            sample_value = repr(sample_value)[:max_length] + "..."
+        sample_value = repr(sample_value)[:max_length] + "..."
 
     return sample_value
 
@@ -117,6 +114,9 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
         extra["columns"] = list(value.columns)[:100]
         extra["index"] = list(value.index)[:100]
         extra["dtypes"] = dict(value.dtypes)
+
+    if variable_type(value) == "dict":
+        extra["keys"] = list(value.keys())[:100]
 
     return extra
 
