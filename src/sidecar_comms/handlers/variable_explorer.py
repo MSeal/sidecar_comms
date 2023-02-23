@@ -95,11 +95,11 @@ def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
         # convert back to original type if we're only showing some items
         sample_value = container_type(sample_items)
 
-    if variable_size_bytes(value) > max_length:
-        if isinstance(value, dict):
-            sample_value = value.keys()
-        else:
-            sample_value = f"{value!r}"[:max_length] + "..."
+    if not is_json_serializable(sample_value):
+        return
+
+    if variable_size_bytes(sample_value) > max_length:
+        sample_value = repr(sample_value)[:max_length] + "..."
 
     return sample_value
 
@@ -113,7 +113,12 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
     if variable_type(value) == "DataFrame":
         extra["columns"] = list(value.columns)[:100]
         extra["index"] = list(value.index)[:100]
-        extra["dtypes"] = dict(value.dtypes)
+        # ensure we can still pass the string dtype through,
+        # since they aren't JSON serializable
+        extra["dtypes"] = {name: str(dtype) for name, dtype in dict(value.dtypes).items()}
+
+    if variable_type(value) == "dict":
+        extra["keys"] = list(value.keys())[:100]
 
     return extra
 
@@ -148,7 +153,21 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     return VariableModel(**basic_props)
 
 
-def json_clean(value: Any, max_length: Optional[int] = None) -> str:
+def is_json_serializable(value: Any) -> bool:
+    """Returns True if a value is JSON serializable."""
+    try:
+        json.dumps(value)
+        return True
+    except (TypeError, ValueError):
+        # either one of these may appear:
+        # - TypeError: X is not JSON serializable
+        # - ValueError: Can't clean for JSON: X
+        # and we won't try to get a string repr here since that could
+        # potentially take a while depending on any custom __repr__ methods
+        return False
+
+
+def json_clean(value: Any, max_length: Optional[int] = None) -> Optional[str]:
     """Ensures a value is JSON serializable, converting to a string if necessary.
 
     Recursively cleans values of dictionaries, and items in lists, sets, and tuples
@@ -162,14 +181,8 @@ def json_clean(value: Any, max_length: Optional[int] = None) -> str:
         container_type = type(value)
         value = container_type([json_clean(v) for v in value])
 
-    try:
-        json.dumps(value)
+    if is_json_serializable(value):
         return value
-    except (TypeError, ValueError):
-        # either one of these may appear:
-        # - TypeError: X is not JSON serializable
-        # - ValueError: Can't clean for JSON: X
-        return f"{value!r}"[:max_length]
 
 
 def get_kernel_variables(skip_prefixes: list = None):
