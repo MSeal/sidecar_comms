@@ -125,3 +125,25 @@ class TestGetKernelVariables:
         variables = get_kernel_variables()
         assert variable_name in variables
         assert variables[variable_name].get("error") is not None
+
+    def test_non_pandas_dataframe(self):
+        """Test that a variable assigned to a non-pandas DataFrame will provide
+        column/dtype information, if available.
+        """
+
+        class DataFrame:
+            def __init__(self):
+                self.columns = ["a", "b", "c"]
+                self.dtypes = ["Int", "Float", "Str"]
+
+        variable_name = "test_foo"
+        variable_value = DataFrame()
+        get_ipython_shell().user_ns[variable_name] = variable_value
+        variables = get_kernel_variables()
+        assert variable_name in variables
+        assert variables[variable_name]["type"] == "DataFrame"
+        assert variables[variable_name]["error"] is None
+        assert isinstance(variables[variable_name]["extra"]["columns"], list)
+        assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
+        assert "a" in variables[variable_name]["extra"]["columns"]
+        assert "a" in variables[variable_name]["extra"]["dtypes"]
