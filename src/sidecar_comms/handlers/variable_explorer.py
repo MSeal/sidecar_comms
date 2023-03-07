@@ -108,6 +108,42 @@ def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
     return sample_value
 
 
+def variable_extra_dtypes(value: Any, columns: list) -> dict:
+    """Returns the dtypes of a DataFrame-like object."""
+    dtypes = getattr(value, "dtypes", None)
+    if dtypes is None:
+        return {}
+
+    if variable_module(value).startswith("pandas") or isinstance(value.dtypes, dict):
+        dtypes = dict(value.dtypes).values()
+    else:
+        dtypes = list(value.dtypes)
+
+    # ensure we can still pass the string dtype through,
+    # since they aren't JSON serializable
+    dtypes = {column: str(dtype).lower() for column, dtype in zip(columns, dtypes)}
+    return dtypes
+
+
+def variable_extra_list_property(value: Any, property_name: str, max_length: int = 100) -> list:
+    """Returns the list-like property if available, coercing if necessary."""
+    prop = getattr(value, property_name, None)
+    if prop is None:
+        return []
+
+    if isinstance(prop, str):
+        return prop.replace(" ", "").split(",")
+
+    elif not isinstance(prop, list):
+        try:
+            prop = list(prop)
+        except TypeError:
+            # some non-iterable
+            return []
+
+    return prop[:max_length]
+
+
 def variable_extra_properties(value: Any) -> Optional[dict]:
     """Handles extracting/generating additional properties for a variable
     based on supported types.
@@ -115,24 +151,10 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
     extra = {}
 
     if variable_type(value) == "DataFrame":
-        if hasattr(value, "columns"):
-            columns = list(value.columns)[:100]
-            extra["columns"] = columns
-
-            if hasattr(value, "dtypes"):
-                if variable_module(value).startswith("pandas") or isinstance(value.dtypes, dict):
-                    dtypes = dict(value.dtypes).values()
-                else:
-                    dtypes = list(value.dtypes)
-
-                # ensure we can still pass the string dtype through,
-                # since they aren't JSON serializable
-                extra["dtypes"] = {
-                    column: str(dtype).lower() for column, dtype in zip(columns, dtypes)
-                }
-
-        if hasattr(value, "index"):
-            extra["index"] = list(value.index)[:100]
+        columns = variable_extra_list_property(value, "columns")
+        extra["columns"] = columns
+        extra["dtypes"] = variable_extra_dtypes(value, columns)
+        extra["index"] = variable_extra_list_property(value, "index")
 
     if variable_type(value) == "dict":
         extra["keys"] = list(value.keys())[:100]
