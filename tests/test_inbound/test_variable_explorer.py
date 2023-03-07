@@ -1,3 +1,8 @@
+import modin.pandas as mpd
+import pandas as pd
+import polars as pl
+import pytest
+
 from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 from sidecar_comms.shell import get_ipython_shell
 
@@ -126,24 +131,45 @@ class TestGetKernelVariables:
         assert variable_name in variables
         assert variables[variable_name].get("error") is not None
 
-    def test_non_pandas_dataframe(self):
+
+class TestDataFrameVariables:
+    @pytest.fixture
+    def pandas_dataframe(self):
+        """Fixture to provide a pandas DataFrame."""
+        return pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    @pytest.fixture
+    def polars_dataframe(self, pandas_dataframe: pd.DataFrame):
+        """Fixture to provide a polars DataFrame."""
+        return pl.from_pandas(pandas_dataframe)
+
+    @pytest.fixture
+    def modin_dataframe(self, pandas_dataframe: pd.DataFrame):
+        """Fixture to provide a modin DataFrame."""
+        return mpd.DataFrame(pandas_dataframe)
+
+    def test_dataframe_extras(
+        self,
+        pandas_dataframe,
+        polars_dataframe,
+        modin_dataframe,
+    ):
         """Test that a variable assigned to a non-pandas DataFrame will provide
         column/dtype information, if available.
         """
+        variables = {
+            "df": pandas_dataframe,
+            "pdf": polars_dataframe,
+            "mdf": modin_dataframe,
+        }
+        get_ipython_shell().user_ns.update(variables)
 
-        class DataFrame:
-            def __init__(self):
-                self.columns = ["a", "b", "c"]
-                self.dtypes = ["Int", "Float", "Str"]
-
-        variable_name = "test_foo"
-        variable_value = DataFrame()
-        get_ipython_shell().user_ns[variable_name] = variable_value
         variables = get_kernel_variables()
-        assert variable_name in variables
-        assert variables[variable_name]["type"] == "DataFrame"
-        assert variables[variable_name]["error"] is None
-        assert isinstance(variables[variable_name]["extra"]["columns"], list)
-        assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
-        assert "a" in variables[variable_name]["extra"]["columns"]
-        assert "a" in variables[variable_name]["extra"]["dtypes"]
+        for variable_name in variables.keys():
+            assert variable_name in variables
+            assert variables[variable_name]["type"] == "DataFrame"
+            assert variables[variable_name]["error"] is None
+            assert isinstance(variables[variable_name]["extra"]["columns"], list)
+            assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
+            assert "a" in variables[variable_name]["extra"]["columns"]
+            assert "a" in variables[variable_name]["extra"]["dtypes"]
