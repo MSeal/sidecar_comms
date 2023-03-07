@@ -157,15 +157,15 @@ class TestDataFrameVariables:
         """Test that a variable assigned to a non-pandas DataFrame will provide
         column/dtype information, if available.
         """
-        variables = {
+        dataframe_variables = {
             "df": pandas_dataframe,
             "pdf": polars_dataframe,
             "mdf": modin_dataframe,
         }
-        get_ipython_shell().user_ns.update(variables)
+        get_ipython_shell().user_ns.update(dataframe_variables)
 
         variables = get_kernel_variables()
-        for variable_name in variables.keys():
+        for variable_name in dataframe_variables.keys():
             assert variable_name in variables
             assert variables[variable_name]["type"] == "DataFrame"
             assert variables[variable_name]["error"] is None
