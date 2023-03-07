@@ -1,3 +1,8 @@
+import modin.pandas as mpd
+import pandas as pd
+import polars as pl
+import pytest
+
 from sidecar_comms.handlers.variable_explorer import get_kernel_variables, variable_sample_value
 from sidecar_comms.shell import get_ipython_shell
 
@@ -125,3 +130,46 @@ class TestGetKernelVariables:
         variables = get_kernel_variables()
         assert variable_name in variables
         assert variables[variable_name].get("error") is not None
+
+
+class TestDataFrameVariables:
+    @pytest.fixture
+    def pandas_dataframe(self):
+        """Fixture to provide a pandas DataFrame."""
+        return pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    @pytest.fixture
+    def polars_dataframe(self):
+        """Fixture to provide a polars DataFrame."""
+        return pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    @pytest.fixture
+    def modin_dataframe(self):
+        """Fixture to provide a modin DataFrame."""
+        return mpd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+
+    def test_dataframe_extras(
+        self,
+        pandas_dataframe,
+        polars_dataframe,
+        modin_dataframe,
+    ):
+        """Test that a variable assigned to a non-pandas DataFrame will provide
+        column/dtype information, if available.
+        """
+        dataframe_variables = {
+            "df": pandas_dataframe,
+            "pdf": polars_dataframe,
+            "mdf": modin_dataframe,
+        }
+        get_ipython_shell().user_ns.update(dataframe_variables)
+
+        variables = get_kernel_variables()
+        for variable_name in dataframe_variables.keys():
+            assert variable_name in variables
+            assert variables[variable_name]["type"] == "DataFrame"
+            assert variables[variable_name]["error"] is None
+            assert isinstance(variables[variable_name]["extra"]["columns"], list)
+            assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
+            assert "a" in variables[variable_name]["extra"]["columns"]
+            assert "a" in variables[variable_name]["extra"]["dtypes"]

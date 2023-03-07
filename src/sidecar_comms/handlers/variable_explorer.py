@@ -35,6 +35,10 @@ def variable_type(value: Any) -> str:
     return type(value).__name__
 
 
+def variable_module(value: Any) -> str:
+    return getattr(value, "__module__", "")
+
+
 def variable_shape(value: Any) -> Optional[tuple]:
     """Returns the shape (n-dimensional; rows, columns, ...) of a variable."""
     if (shape := getattr(value, "shape", None)) is None:
@@ -104,6 +108,42 @@ def variable_sample_value(value: Any, max_length: Optional[int] = None) -> Any:
     return sample_value
 
 
+def variable_extra_dtypes(value: Any, columns: list) -> dict:
+    """Returns the dtypes of a DataFrame-like object."""
+    dtypes = getattr(value, "dtypes", None)
+    if dtypes is None:
+        return {}
+
+    if variable_module(value).startswith("pandas") or isinstance(value.dtypes, dict):
+        dtypes = dict(value.dtypes).values()
+    else:
+        dtypes = list(value.dtypes)
+
+    # ensure we can still pass the string dtype through,
+    # since they aren't JSON serializable
+    dtypes = {column: str(dtype).lower() for column, dtype in zip(columns, dtypes)}
+    return dtypes
+
+
+def variable_extra_list_property(value: Any, property_name: str, max_length: int = 100) -> list:
+    """Returns the list-like property if available, coercing if necessary."""
+    prop = getattr(value, property_name, None)
+    if prop is None:
+        return []
+
+    if isinstance(prop, str):
+        return prop.replace(" ", "").split(",")
+
+    elif not isinstance(prop, list):
+        try:
+            prop = list(prop)
+        except TypeError:
+            # some non-iterable
+            return []
+
+    return prop[:max_length]
+
+
 def variable_extra_properties(value: Any) -> Optional[dict]:
     """Handles extracting/generating additional properties for a variable
     based on supported types.
@@ -111,11 +151,10 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
     extra = {}
 
     if variable_type(value) == "DataFrame":
-        extra["columns"] = list(value.columns)[:100]
-        extra["index"] = list(value.index)[:100]
-        # ensure we can still pass the string dtype through,
-        # since they aren't JSON serializable
-        extra["dtypes"] = {name: str(dtype) for name, dtype in dict(value.dtypes).items()}
+        columns = variable_extra_list_property(value, "columns")
+        extra["columns"] = columns
+        extra["dtypes"] = variable_extra_dtypes(value, columns)
+        extra["index"] = variable_extra_list_property(value, "index")
 
     if variable_type(value) == "dict":
         extra["keys"] = list(value.keys())[:100]
@@ -133,7 +172,7 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
         "name": name,
         "docstring": variable_docstring(value),
         "type": variable_type(value),
-        "module": getattr(value, "__module__", None),
+        "module": variable_module(value),
     }
 
     # in the event we run into any parsing/validation errors,
