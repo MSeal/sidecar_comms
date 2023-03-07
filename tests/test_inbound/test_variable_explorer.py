@@ -139,14 +139,14 @@ class TestDataFrameVariables:
         return pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
 
     @pytest.fixture
-    def polars_dataframe(self, pandas_dataframe: pd.DataFrame):
+    def polars_dataframe(self):
         """Fixture to provide a polars DataFrame."""
-        return pl.from_pandas(pandas_dataframe)
+        return pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
 
     @pytest.fixture
-    def modin_dataframe(self, pandas_dataframe: pd.DataFrame):
+    def modin_dataframe(self):
         """Fixture to provide a modin DataFrame."""
-        return mpd.DataFrame(pandas_dataframe)
+        return mpd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
 
     def test_dataframe_extras(
         self,
