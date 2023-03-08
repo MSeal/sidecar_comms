@@ -128,7 +128,7 @@ class FormCellBase(ObservableModel):
 # --- Specific models ---
 class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
-    value: str = Field(default_factory=lambda: datetime.now(timezone.utc))
+    value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @validator("value", pre=True, always=True)
     def validate_value(cls, value):
@@ -137,8 +137,6 @@ class Datetime(FormCellBase):
             if value.endswith("Z"):
                 value = value.replace("Z", "+00:00")
             value = datetime.fromisoformat(value)
-        if isinstance(value, datetime):
-            value = value.strftime("%Y-%m-%dT%H:%M")
         return value
 
 
