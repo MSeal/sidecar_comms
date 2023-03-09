@@ -5,7 +5,6 @@ Comm target registration and message handling for inbound messages.
 import traceback
 
 from ipykernel.comm import Comm
-from IPython import get_ipython
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
 from sidecar_comms.handlers.variable_explorer import (
@@ -14,6 +13,7 @@ from sidecar_comms.handlers.variable_explorer import (
     set_kernel_variable,
 )
 from sidecar_comms.models import CommMessage
+from sidecar_comms.shell import get_ipython_shell
 
 
 def inbound_comm(comm, open_msg):
@@ -48,14 +48,15 @@ def handle_msg(data: dict, comm: Comm) -> None:
 
     # TODO: pydantic discriminators for message types->handlers
     if inbound_msg == "get_kernel_variables":
-        variables = get_kernel_variables()
+        comm.send({"status": "getting kernel variables..."})
+        variables = get_kernel_variables(comm)
         msg = CommMessage(
             body=variables,
             handler="get_kernel_variables",
         )
         comm.send(msg.dict())
 
-    if inbound_msg == "rename_kernel_variable":
+    elif inbound_msg == "rename_kernel_variable":
         if "old_name" in data and "new_name" in data:
             status = rename_kernel_variable(data["old_name"], data["new_name"])
             msg = CommMessage(
@@ -64,7 +65,7 @@ def handle_msg(data: dict, comm: Comm) -> None:
             )
             comm.send(msg.dict())
 
-    if inbound_msg == "update_form_cell":
+    elif inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
         form_cell.update(data)
@@ -74,11 +75,12 @@ def handle_msg(data: dict, comm: Comm) -> None:
         )
         comm.send(msg.dict())
 
-    if inbound_msg == "create_form_cell":
+    elif inbound_msg == "create_form_cell":
         # form cell object created from the frontend
         cell_id = data.pop("cell_id")
         form_cell = parse_as_form_cell(data)
-        get_ipython().user_ns[data["model_variable_name"]] = form_cell
+        model_variable = data["model_variable_name"]
+        get_ipython_shell().user_ns[model_variable] = form_cell
         # send a comm message back to the sidecar to allow it to track
         # the cell id to form cell id mapping by echoing the provided cell_id
         # and also including the newly-generated form cell model that includes
@@ -89,7 +91,10 @@ def handle_msg(data: dict, comm: Comm) -> None:
         )
         comm.send(msg.dict())
 
-    if inbound_msg == "assign_value_variable":
+    elif inbound_msg == "assign_value_variable":
         form_cell_id = data["form_cell_id"]
         form_cell = FORM_CELL_CACHE[form_cell_id]
         set_kernel_variable(data["value_variable_name"], form_cell.value)
+
+    else:
+        raise ValueError(f"No handling set up for message type `{inbound_msg}`")

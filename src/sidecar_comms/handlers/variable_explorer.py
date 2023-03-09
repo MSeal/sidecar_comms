@@ -5,6 +5,7 @@ from typing import Any, Optional, Union
 from pydantic import BaseModel, Field
 
 from sidecar_comms.shell import get_ipython_shell
+from sidecar_comms.src.sidecar_comms.models import CommMessage
 
 MAX_STRING_LENGTH = 1000
 CONTAINER_TYPES = [list, set, frozenset, tuple]
@@ -29,6 +30,10 @@ def variable_docstring(value: Any) -> Optional[str]:
     if not isinstance(doc, str):
         return
     return doc[:5000]
+
+
+def variable_module(value: Any) -> Optional[str]:
+    return getattr(value, "__module__", "")
 
 
 def variable_type(value: Any) -> str:
@@ -224,9 +229,15 @@ def json_clean(value: Any, max_length: Optional[int] = None) -> Optional[str]:
         return value
 
 
-def get_kernel_variables(skip_prefixes: list = None):
+def get_kernel_variables(comm, skip_prefixes: list = None):
     """Returns a list of variables in the kernel."""
     variables = dict(get_ipython_shell().user_ns)
+    comm.send(
+        CommMessage(
+            body={"status": f"got initial variables: {list(variables.keys())}"},
+            handler="debug",
+        ).dict()
+    )
 
     skip_prefixes = skip_prefixes or [
         "_",
@@ -241,9 +252,21 @@ def get_kernel_variables(skip_prefixes: list = None):
     for name, value in variables.items():
         if name.startswith(tuple(skip_prefixes)):
             continue
+        comm.send(
+            CommMessage(
+                body={"status": f"converting `{name}` to variable model..."},
+                handler="debug",
+            ).dict()
+        )
         variable_model = variable_to_model(name=name, value=value)
         cleaned_variable_model_dict = {k: json_clean(v) for k, v in variable_model.dict().items()}
         variable_data[name] = cleaned_variable_model_dict
+    comm.send(
+        CommMessage(
+            body={"status": f"sending {len(variable_data.items())} variables back out..."},
+            handler="debug",
+        ).dict()
+    )
     return variable_data
 
 
