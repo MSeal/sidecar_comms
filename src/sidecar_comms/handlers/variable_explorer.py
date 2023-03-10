@@ -170,7 +170,7 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     """
     basic_props = {
         "name": name,
-        "docstring": variable_docstring(value),
+        # "docstring": variable_docstring(value),
         "type": variable_type(value),
         "module": variable_module(value),
     }
