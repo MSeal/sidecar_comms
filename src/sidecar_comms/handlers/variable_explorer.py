@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from sidecar_comms.shell import get_ipython_shell
 
-MAX_STRING_LENGTH = 1000
+MAX_STRING_LENGTH = 500
 CONTAINER_TYPES = [list, set, frozenset, tuple]
 
 
@@ -28,7 +28,7 @@ def variable_docstring(value: Any) -> Optional[str]:
         return
     if not isinstance(doc, str):
         return
-    return doc[:5000]
+    return doc[:MAX_STRING_LENGTH]
 
 
 def variable_type(value: Any) -> str:
@@ -170,7 +170,7 @@ def variable_to_model(name: str, value: Any) -> VariableModel:
     """
     basic_props = {
         "name": name,
-        "docstring": variable_docstring(value),
+        # "docstring": variable_docstring(value),
         "type": variable_type(value),
         "module": variable_module(value),
     }
