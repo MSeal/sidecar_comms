@@ -71,7 +71,6 @@ class FormCellBase(ObservableModel):
     execution_trigger_behavior: ExecutionTriggerBehavior = (
         ExecutionTriggerBehavior.change_variable_only
     )
-    input_type: str = ""
 
     # only used for tests
     _ipy: Optional[InteractiveShell] = PrivateAttr()
@@ -100,12 +99,6 @@ class FormCellBase(ObservableModel):
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
         data = self.dict()
-
-        if self.input_type == "datetime":
-            # specifically convert from datetime to YYYY-mm-ddTHH:MM,
-            # otherwise the frontend will have issues rendering
-            data["value"] = self.value.strftime("%Y-%m-%dT%H:%M")
-
         self._comm.send(handler="update_form_cell", body=data)
 
     def _on_value_update(self, change: Change) -> None:
@@ -134,20 +127,24 @@ class FormCellBase(ObservableModel):
 
 
 # --- Specific models ---
-def validate_datetime_value(value):
-    """Make sure value is a valid datetime object"""
-    if isinstance(value, str):
-        if value.endswith("Z"):
-            value = value.replace("Z", "+00:00")
-        value = datetime.fromisoformat(value)
-    return value
-
-
 class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
     value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    _validate_value = validator("value", pre=True, always=True)(validate_datetime_value)
+    @validator("value", pre=True, always=True)
+    def validate_datetime_value(cls, value):
+        """Make sure value is a valid datetime object"""
+        if isinstance(value, str):
+            if value.endswith("Z"):
+                value = value.replace("Z", "+00:00")
+            value = datetime.fromisoformat(value)
+        return value
+
+    def _sync_sidecar(self, change: Change):
+        """Overrides parent class _sync_sidecar() method to use specific datetime string format."""
+        data = self.dict()
+        data["value"] = data["value"].strftime("%Y-%m-%dT%H:%M")
+        self._comm.send(handler="update_form_cell", body=data)
 
 
 class SliderSettings(ObservableModel):
