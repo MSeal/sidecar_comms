@@ -200,6 +200,9 @@ class TestFormCellUpdates:
         assert form_cell.settings.options == ["a", "b", "x", "y"]
 
     def test_datetime_value_update_format(self):
+        """Make sure the value variable doesn't convert to a string datetime during value updates,
+        and that it stays a datetime object with tzinfo just like the model value.
+        """
         data = {
             "input_type": "datetime",
             "model_variable_name": "test",
