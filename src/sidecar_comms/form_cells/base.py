@@ -71,11 +71,6 @@ class FormCellBase(ObservableModel):
         ExecutionTriggerBehavior.change_variable_only
     )
 
-    @validator("settings", pre=True, always=True)
-    def validate_settings(cls, value):
-        value = value or {}
-        return parse_obj_as(ObservableModel, value)
-
     def __init__(self, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
