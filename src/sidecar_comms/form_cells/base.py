@@ -29,9 +29,8 @@ model
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Union
 
-from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
@@ -72,8 +71,10 @@ class FormCellBase(ObservableModel):
         ExecutionTriggerBehavior.change_variable_only
     )
 
-    # only used for tests
-    _ipy: Optional[InteractiveShell] = PrivateAttr()
+    @validator("settings", pre=True, always=True)
+    def validate_settings(cls, value):
+        value = value or {}
+        return parse_obj_as(ObservableModel, value)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -98,14 +99,14 @@ class FormCellBase(ObservableModel):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
-        data = self.dict()
-        self._comm.send(handler="update_form_cell", body=data)
+        self._comm.send(handler="update_form_cell", body=self.dict())
 
     def _on_value_update(self, change: Change) -> None:
         """Update the kernel variable when the .value changes
         based on the associated .value_variable_name.
         """
-        set_kernel_variable(self.value_variable_name, change.new)
+        # using self.value instead of change.new since value is type-validated
+        set_kernel_variable(self.value_variable_name, self.value)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
@@ -133,11 +134,11 @@ class Datetime(FormCellBase):
 
     @validator("value", pre=True, always=True)
     def validate_datetime_value(cls, value):
-        """Make sure value is a valid datetime object"""
+        """Make sure value is a valid datetime object with UTC timezone info."""
         if isinstance(value, str):
             if value.endswith("Z"):
                 value = value.replace("Z", "+00:00")
-            value = datetime.fromisoformat(value)
+            value = datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
         return value
 
     def _sync_sidecar(self, change: Change):
