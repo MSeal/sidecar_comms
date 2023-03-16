@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import Mock
 
 from sidecar_comms.form_cells.base import (
@@ -42,7 +43,7 @@ class TestParseFormCell:
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "datetime"
         assert form_cell.model_variable_name == "test"
-        assert form_cell.value == "2023-01-01T00:00"
+        assert form_cell.value == datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc)
         assert form_cell.variable_type == "datetime"
         assert form_cell.settings == {}
         assert isinstance(form_cell, Datetime)
