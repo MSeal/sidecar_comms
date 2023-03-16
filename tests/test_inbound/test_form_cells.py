@@ -199,6 +199,20 @@ class TestFormCellUpdates:
         assert form_cell.value == ["b", "x"]
         assert form_cell.settings.options == ["a", "b", "x", "y"]
 
+    def test_datetime_value_update_format(self):
+        data = {
+            "input_type": "datetime",
+            "model_variable_name": "test",
+            "value": "2023-01-01T00:00:00",
+            "settings": {},
+        }
+        form_cell = parse_as_form_cell(data)
+        update_dict = {"value": "2023-03-03T00:00:00"}
+        form_cell.update(update_dict)
+        assert form_cell.value == datetime(2023, 3, 3, 0, 0, tzinfo=timezone.utc)
+        value_variable = get_ipython_shell().user_ns["test_value"]
+        assert value_variable == datetime(2023, 3, 3, 0, 0, tzinfo=timezone.utc)
+
 
 class TestFormCellObservers:
     def test_callback_triggered_on_value_change(self):
