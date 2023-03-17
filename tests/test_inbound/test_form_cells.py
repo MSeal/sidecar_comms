@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
 from unittest.mock import Mock
+
+from ipykernel.comm import Comm
 
 from sidecar_comms.form_cells.base import (
     Checkboxes,
@@ -9,6 +12,7 @@ from sidecar_comms.form_cells.base import (
     Text,
     parse_as_form_cell,
 )
+from sidecar_comms.inbound import handle_msg
 from sidecar_comms.shell import get_ipython_shell
 
 
@@ -42,7 +46,7 @@ class TestParseFormCell:
         form_cell = parse_as_form_cell(data)
         assert form_cell.input_type == "datetime"
         assert form_cell.model_variable_name == "test"
-        assert form_cell.value == "2023-01-01T00:00"
+        assert form_cell.value == datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc)
         assert form_cell.variable_type == "datetime"
         assert form_cell.settings == {}
         assert isinstance(form_cell, Datetime)
@@ -141,6 +145,8 @@ class TestFormCellSetup:
         assert form_cell.value_variable_name == "test_value"
         assert "test_value" in get_ipython_shell().user_ns
 
+
+class TestFormCellUpdates:
     def test_value_variable_updated(self):
         """Test that a value variable is updated when the form cell value
         is updated."""
@@ -157,8 +163,6 @@ class TestFormCellSetup:
         form_cell.value = "new value"
         assert get_ipython_shell().user_ns["test_value"] == "new value"
 
-
-class TestFormCellUpdates:
     def test_update_dict_settings(self):
         """Test that updating a form cell with a nested dictionary
         updates the settings without dropping existing settings
@@ -197,6 +201,23 @@ class TestFormCellUpdates:
         form_cell.update(update_dict)
         assert form_cell.value == ["b", "x"]
         assert form_cell.settings.options == ["a", "b", "x", "y"]
+
+    def test_datetime_value_update_format(self):
+        """Make sure the value variable doesn't convert to a string datetime during value updates,
+        and that it stays a datetime object with tzinfo just like the model value.
+        """
+        data = {
+            "input_type": "datetime",
+            "model_variable_name": "test",
+            "value": "2023-01-01T00:00:00",
+            "settings": {},
+        }
+        form_cell = parse_as_form_cell(data)
+        update_dict = {"value": "2023-03-03T00:00:00"}
+        form_cell.update(update_dict)
+        assert form_cell.value == datetime(2023, 3, 3, 0, 0, tzinfo=timezone.utc)
+        value_variable = get_ipython_shell().user_ns["test_value"]
+        assert value_variable == datetime(2023, 3, 3, 0, 0, tzinfo=timezone.utc)
 
 
 class TestFormCellObservers:
@@ -239,3 +260,72 @@ class TestFormCellObservers:
                 "new": ["a", "b", "x", "y"],
             }
         )
+
+
+class TestCommHandler:
+    def test_update_form_cell(self, sample_comm: Comm):
+        """
+        Test that a update_form_cell comm message is handled properly by pulling the correct form
+        cell instance and updating the properties, to include updating the associated
+        value variable.
+
+        If an extra property is passed, we should still successfully update the form cell model.
+        """
+        model_name = "form1_model"
+        value_name = "form1"
+        form_cell = Slider(value_variable_name=value_name, settings={})
+        shell = get_ipython_shell()
+        shell.user_ns[model_name] = form_cell
+        assert value_name in shell.user_ns.keys()
+
+        msg = {
+            "msg": "update_form_cell",
+            "form_cell_id": form_cell.id,
+            "id": form_cell.id,
+            "label": "",
+            "model_variable_name": model_name,
+            "value_variable_name": value_name,
+            "variable_type": "number",
+            "value": 50,
+            "settings": {},
+            "execution_trigger_behavior": "change_variable_only",
+            "input_type": "slider",
+            "extra_property": "foobar",
+        }
+        handle_msg(msg, sample_comm)
+
+        updated_form_cell = shell.user_ns[model_name]
+        assert updated_form_cell.value == 50
+        assert shell.user_ns[value_name] == 50
+
+    def test_update_datetime_form_cell(self, sample_comm: Comm):
+        """
+        Same as the test above, but for datetime form cells, where we include converting the
+        value to a datetime object.
+        """
+        model_name = "dt_model"
+        value_name = "dt"
+        form_cell = Datetime(value_variable_name=value_name, settings={})
+        shell = get_ipython_shell()
+        shell.user_ns[model_name] = form_cell
+        assert value_name in shell.user_ns.keys()
+
+        msg = {
+            "msg": "update_form_cell",
+            "form_cell_id": form_cell.id,
+            "id": form_cell.id,
+            "label": "",
+            "model_variable_name": model_name,
+            "value_variable_name": value_name,
+            "variable_type": "string",
+            "value": "2020-01-01T00:00",
+            "settings": {},
+            "execution_trigger_behavior": "change_variable_only",
+            "input_type": "datetime",
+            "extra_property": "foobar",
+        }
+        handle_msg(msg, sample_comm)
+
+        updated_form_cell = shell.user_ns[model_name]
+        assert updated_form_cell.value == datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)
+        assert shell.user_ns[value_name] == datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)

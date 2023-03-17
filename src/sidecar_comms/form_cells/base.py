@@ -29,9 +29,8 @@ model
 import enum
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Union
 
-from IPython.core.interactiveshell import InteractiveShell
 from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
 from typing_extensions import Annotated
 
@@ -72,9 +71,6 @@ class FormCellBase(ObservableModel):
         ExecutionTriggerBehavior.change_variable_only
     )
 
-    # only used for tests
-    _ipy: Optional[InteractiveShell] = PrivateAttr()
-
     def __init__(self, **data):
         super().__init__(**data)
         self._comm = comm_manager().open_comm("form_cells")
@@ -104,7 +100,8 @@ class FormCellBase(ObservableModel):
         """Update the kernel variable when the .value changes
         based on the associated .value_variable_name.
         """
-        set_kernel_variable(self.value_variable_name, change.new)
+        # using self.value instead of change.new since value is type-validated
+        set_kernel_variable(self.value_variable_name, self.value)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
@@ -122,24 +119,30 @@ class FormCellBase(ObservableModel):
                 for setting_name, setting_value in value.items():
                     setattr(self.settings, setting_name, setting_value)
                 continue
+            if not hasattr(self, name):
+                continue
             setattr(self, name, value)
 
 
 # --- Specific models ---
 class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
-    value: str = Field(default_factory=lambda: datetime.now(timezone.utc))
+    value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @validator("value", pre=True, always=True)
-    def validate_value(cls, value):
-        """Make sure value is a valid datetime string in isoformat"""
+    def validate_datetime_value(cls, value):
+        """Make sure value is a valid datetime object with UTC timezone info."""
         if isinstance(value, str):
             if value.endswith("Z"):
                 value = value.replace("Z", "+00:00")
-            value = datetime.fromisoformat(value)
-        if isinstance(value, datetime):
-            value = value.strftime("%Y-%m-%dT%H:%M")
+            value = datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
         return value
+
+    def _sync_sidecar(self, change: Change):
+        """Overrides parent class _sync_sidecar() method to use specific datetime string format."""
+        data = self.dict()
+        data["value"] = data["value"].strftime("%Y-%m-%dT%H:%M")
+        self._comm.send(handler="update_form_cell", body=data)
 
 
 class SliderSettings(ObservableModel):
