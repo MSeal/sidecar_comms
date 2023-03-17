@@ -119,6 +119,8 @@ class FormCellBase(ObservableModel):
                 for setting_name, setting_value in value.items():
                     setattr(self.settings, setting_name, setting_value)
                 continue
+            if not hasattr(self, name):
+                continue
             setattr(self, name, value)
 
 
