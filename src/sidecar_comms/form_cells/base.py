@@ -100,7 +100,8 @@ class FormCellBase(ObservableModel):
         """Update the kernel variable when the .value changes
         based on the associated .value_variable_name.
         """
-        set_kernel_variable(self.value_variable_name, change.new)
+        # using self.value instead of change.new since value is type-validated
+        set_kernel_variable(self.value_variable_name, self.value)
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
@@ -140,9 +141,6 @@ class Datetime(FormCellBase):
         data = self.dict()
         data["value"] = data["value"].strftime("%Y-%m-%dT%H:%M")
         self._comm.send(handler="update_form_cell", body=data)
-
-    class Config:
-        validate_on_assignment = True
 
 
 class SliderSettings(ObservableModel):
