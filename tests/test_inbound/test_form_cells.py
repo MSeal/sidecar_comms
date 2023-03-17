@@ -300,7 +300,7 @@ class TestCommHandler:
 
     def test_update_datetime_form_cell(self, sample_comm: Comm):
         """
-        Same as the test above, but for datetime form cells, where we includes converting the
+        Same as the test above, but for datetime form cells, where we include converting the
         value to a datetime object.
         """
         model_name = "dt_model"
