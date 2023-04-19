@@ -74,14 +74,12 @@ def variable_size(value: Any) -> Optional[Union[int, tuple]]:
 
 def variable_size_bytes(value: Any) -> Optional[int]:
     """Returns the size of a variable in bytes."""
+    if variable_type(value) == "DataFrame":
+        # on large dataframes, this could take a very long time
+        return
+
     try:
         return sys.getsizeof(value)
-    except Exception:
-        pass
-    # may be a pandas object
-    # TODO: add extra pandas object handlers
-    try:
-        return value.memory_usage().sum()
     except Exception:
         pass
 
