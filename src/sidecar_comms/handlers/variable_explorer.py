@@ -153,7 +153,7 @@ def variable_extra_properties(value: Any) -> Optional[dict]:
     if variable_type(value) == "DataFrame":
         columns = variable_extra_list_property(value, "columns")
         extra["columns"] = columns
-        # removing dtypes and index
+        # temporarily removing dtypes and index for performance reasons
         # extra["dtypes"] = variable_extra_dtypes(value, columns)
         # extra["index"] = variable_extra_list_property(value, "index")
 
