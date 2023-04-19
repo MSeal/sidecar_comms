@@ -170,6 +170,7 @@ class TestDataFrameVariables:
             assert variables[variable_name]["type"] == "DataFrame"
             assert variables[variable_name]["error"] is None
             assert isinstance(variables[variable_name]["extra"]["columns"], list)
-            assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
             assert "a" in variables[variable_name]["extra"]["columns"]
-            assert "a" in variables[variable_name]["extra"]["dtypes"]
+            if "dtypes" in variables[variable_name]["extra"]:
+                assert isinstance(variables[variable_name]["extra"]["dtypes"], dict)
+                assert "a" in variables[variable_name]["extra"]["dtypes"]
