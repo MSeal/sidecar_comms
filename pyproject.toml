@@ -13,7 +13,7 @@ python = "^3.8"
 ipykernel = "^6.20.2"
 pydantic = "^1.10.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
 flake8 = "^5.0.4"
 flake8-docstrings = "^1.7.0"
@@ -23,6 +23,9 @@ nox-poetry = "^1.0.2"
 pytest = "^7.2.1"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
+pandas = "^1.5.3"
+polars = "^0.16.11"
+modin = {extras = ["all"], version = "^0.18.1"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

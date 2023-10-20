@@ -3,11 +3,9 @@ Comm target registration and message handling for inbound messages.
 (Sidecar -> kernel)
 """
 import traceback
-from typing import Optional
 
 from ipykernel.comm import Comm
 from IPython import get_ipython
-from IPython.core.interactiveshell import InteractiveShell
 
 from sidecar_comms.form_cells.base import FORM_CELL_CACHE, parse_as_form_cell
 from sidecar_comms.handlers.variable_explorer import (
@@ -44,11 +42,7 @@ def inbound_comm(comm, open_msg):
     comm.send({"status": "connected", "source": "sidecar_comms"})
 
 
-def handle_msg(
-    data: dict,
-    comm: Comm,
-    ipython_shell: Optional[InteractiveShell] = None,
-) -> None:
+def handle_msg(data: dict, comm: Comm) -> None:
     """Checks the message type and calls the appropriate handler."""
     inbound_msg = data.pop("msg", None)
 
@@ -63,11 +57,7 @@ def handle_msg(
 
     if inbound_msg == "rename_kernel_variable":
         if "old_name" in data and "new_name" in data:
-            status = rename_kernel_variable(
-                data["old_name"],
-                data["new_name"],
-                ipython_shell=ipython_shell,
-            )
+            status = rename_kernel_variable(data["old_name"], data["new_name"])
             msg = CommMessage(
                 body={"status": status},
                 handler="rename_kernel_variable",
