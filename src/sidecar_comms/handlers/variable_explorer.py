@@ -13,13 +13,13 @@ CONTAINER_TYPES = [list, set, frozenset, tuple]
 class VariableModel(BaseModel):
     name: str
     type: str
-    docstring: Optional[str]
-    module: Optional[str]
-    sample_value: Any  # may be the full value if small enough, only truncated for larger values
-    size: Optional[Union[int, tuple]]
-    size_bytes: Optional[int]
+    docstring: Optional[str] = None
+    module: Optional[str] = None
+    sample_value: Any = None  # may be the full value if small enough, only truncated for larger values
+    size: Optional[Union[int, tuple]] = None
+    size_bytes: Optional[int] = None
     extra: dict = Field(default_factory=dict)
-    error: Optional[str]
+    error: Optional[str] = None
 
 
 def variable_docstring(value: Any) -> Optional[str]:

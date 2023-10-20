@@ -22,7 +22,7 @@ that update the frontend state.
 Finally, the backend implementation of form cells use a discriminator pattern. You can create a
 form cell from a dictionary that is coming in from the frontend. Example:
 
-model = pydantic.parse_obj_as(FormCell, {"input_type": "datetime", "value": "2021-01-01"})
+model = pydantic.TypeAdapter(FormCell).validate_python({"input_type": "datetime", "value": "2021-01-01"})
 model
 >>> Datetime(value=datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc))
 """
@@ -31,7 +31,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Union
 
-from pydantic import Extra, Field, PrivateAttr, parse_obj_as, validator
+from pydantic import ConfigDict, Field, PrivateAttr, TypeAdapter, field_validator
 from typing_extensions import Annotated
 
 from sidecar_comms.form_cells.observable import Change, ObservableModel
@@ -129,7 +129,7 @@ class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
     value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    @validator("value", pre=True, always=True)
+    @field_validator("value")
     def validate_datetime_value(cls, value):
         """Make sure value is a valid datetime object with UTC timezone info."""
         if isinstance(value, str):
@@ -160,7 +160,7 @@ class Slider(FormCellBase):
 class OptionsSettings(ObservableModel):
     options: List[str] = Field(default_factory=list)
 
-    @validator("options", pre=True, always=True)
+    @field_validator("options")
     def validate_options(cls, value):
         """Make sure values are a unique list of strings."""
         if not isinstance(value, list):
@@ -193,11 +193,13 @@ class Text(FormCellBase):
     settings: TextSettings = Field(default_factory=TextSettings)
 
 
-class CustomSettings(ObservableModel, extra=Extra.allow):
-    pass
+class CustomSettings(ObservableModel):
+    model_config = ConfigDict(extra="allow")
 
 
-class Custom(FormCellBase, extra=Extra.allow):
+class Custom(FormCellBase):
+    model_config = ConfigDict(extra="allow")
+
     input_type: Literal["custom"] = "custom"
     settings: CustomSettings = Field(default_factory=CustomSettings)
 
@@ -206,7 +208,7 @@ class Custom(FormCellBase, extra=Extra.allow):
 
 
 # FormCell is just a type, you can't instantiate FormCell()
-# See top of file / module docstring for example usage with pydantic.parse_obj_as
+# See top of file / module docstring for example usage with pydantic.TypeAdapter
 model_union = Union[
     Checkboxes,
     Datetime,
@@ -226,4 +228,4 @@ def parse_as_form_cell(data: dict) -> FormCell:
     # in case we need to overwrite it as "custom"
     if data["input_type"] not in valid_model_input_types:
         data["input_type"] = "custom"
-    return parse_obj_as(FormCell, data)
+    return TypeAdapter(FormCell).validate_python(data)

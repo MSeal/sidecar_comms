@@ -29,13 +29,13 @@ f
 from collections import defaultdict
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Union
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import ConfigDict, BaseModel, PrivateAttr
 
 
 class Change(BaseModel):
     name: str
-    old: Any
-    new: Any
+    old: Any = None
+    new: Any = None
 
 
 class Observer(BaseModel):
@@ -53,9 +53,7 @@ class ObservableModel(BaseModel):
     _observers: DefaultDict[str, List[Observer]] = PrivateAttr(
         default_factory=lambda: defaultdict(list)
     )
-
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def __setattr__(self, name, value):
         if name not in self._observers:
