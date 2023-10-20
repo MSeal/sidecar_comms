@@ -25,7 +25,7 @@ pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
 pandas = "^1.5.3"
 polars = "^0.16.11"
-modin = {extras = ["all"], version = "^0.18.1"}
+modin = {extras = ["all"], version = "^0.22.3"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

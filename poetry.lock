@@ -1918,13 +1918,13 @@ files = [
 
 [[package]]
 name = "modin"
-version = "0.18.1"
+version = "0.22.3"
 description = "Modin: Make your pandas code run faster by changing one line of code."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "modin-0.18.1-py3-none-any.whl", hash = "sha256:ce2a928de715b64c37de8d6f8c5547c3cc0696fd11a99795a27fc96079f65551"},
-    {file = "modin-0.18.1.tar.gz", hash = "sha256:4ba831d272d8b8b122973e56a709fe86f3c50c0792c7e2cb091d95b422f83720"},
+    {file = "modin-0.22.3-py3-none-any.whl", hash = "sha256:e438ead6eb8dc536dbf8c74365e007d88d6187196f2d0756b77d6551bf35a686"},
+    {file = "modin-0.22.3.tar.gz", hash = "sha256:95b385de9ca8c84de7f6fd126fc1884e0e86f24878bc9613b6067bc335f4eff1"},
 ]
 
 [package.dependencies]
@@ -1939,14 +1939,15 @@ packaging = "*"
 pandas = "1.5.3"
 psutil = "*"
 pyarrow = {version = "*", optional = true, markers = "extra == \"all\""}
-ray = {version = ">=1.13.0", extras = ["default"], optional = true, markers = "extra == \"all\""}
+pydantic = {version = "<2", optional = true, markers = "extra == \"all\""}
+ray = {version = ">=1.13.0,<2.5.0 || >2.5.0", extras = ["default"], optional = true, markers = "extra == \"all\""}
 rpyc = {version = "4.1.5", optional = true, markers = "extra == \"all\""}
 unidist = {version = ">=0.2.1", extras = ["mpi"], optional = true, markers = "extra == \"all\""}
 
 [package.extras]
-all = ["boto3", "cloudpickle", "dask (>=2.22.0)", "distributed (>=2.22.0)", "modin-spreadsheet (>=0.1.0)", "pyarrow", "ray[default] (>=1.13.0)", "rpyc (==4.1.5)", "unidist[mpi] (>=0.2.1)"]
+all = ["boto3", "cloudpickle", "dask (>=2.22.0)", "distributed (>=2.22.0)", "modin-spreadsheet (>=0.1.0)", "pyarrow", "pydantic (<2)", "ray[default] (>=1.13.0,!=2.5.0)", "rpyc (==4.1.5)", "unidist[mpi] (>=0.2.1)"]
 dask = ["dask (>=2.22.0)", "distributed (>=2.22.0)"]
-ray = ["pyarrow", "ray[default] (>=1.13.0)"]
+ray = ["pyarrow", "pydantic (<2)", "ray[default] (>=1.13.0,!=2.5.0)"]
 remote = ["boto3", "cloudpickle", "rpyc (==4.1.5)"]
 spreadsheet = ["modin-spreadsheet (>=0.1.0)"]
 sql = ["dfsql (>=0.4.2)", "pyparsing (<=2.4.7)"]
@@ -3976,4 +3977,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c9d4303a23fa66dbef226f023e8ca87a6fcf12f612b89f32963d39424e9dad54"
+content-hash = "27907490170200c05c14bd2cecfc2c54d2889cbf8a7160dc75902b4c0d4a5fda"
