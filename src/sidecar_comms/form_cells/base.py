@@ -129,7 +129,7 @@ class Datetime(FormCellBase):
     input_type: Literal["datetime"] = "datetime"
     value: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    @field_validator("value")
+    @field_validator("value", mode="before")
     def validate_datetime_value(cls, value):
         """Make sure value is a valid datetime object with UTC timezone info."""
         if isinstance(value, str):
@@ -220,7 +220,7 @@ model_union = Union[
 ]
 FormCell = Annotated[model_union, Field(discriminator="input_type")]
 # we don't have any other way to check whether an `input_type` value is valid
-valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
+valid_model_input_types = [m.model_fields["input_type"].default for m in model_union.__args__]
 
 FORM_CELL_ADAPTER = TypeAdapter(FormCell)
 

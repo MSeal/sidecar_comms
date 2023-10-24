@@ -80,7 +80,7 @@ class ObservableModel(BaseModel):
          - if name is a list of strings, callback is registered on those specific fields
         """
         if names is None:
-            names = list(self.__fields__)
+            names = list(self.model_fields)
         elif isinstance(names, str):
             names = [names]
         obs = Observer(names=names, fn=fn, args=args, kwargs=kwargs)
