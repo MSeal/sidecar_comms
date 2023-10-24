@@ -29,7 +29,7 @@ f
 from collections import defaultdict
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Union
 
-from pydantic import ConfigDict, BaseModel, PrivateAttr
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 
 class Change(BaseModel):

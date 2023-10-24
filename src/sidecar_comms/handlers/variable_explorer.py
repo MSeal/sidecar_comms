@@ -15,7 +15,9 @@ class VariableModel(BaseModel):
     type: str
     docstring: Optional[str] = None
     module: Optional[str] = None
-    sample_value: Any = None  # may be the full value if small enough, only truncated for larger values
+    # sample_value may be the full value if small enough, only truncated for larger values
+    sample_value: Any = None
+
     size: Optional[Union[int, tuple]] = None
     size_bytes: Optional[int] = None
     extra: dict = Field(default_factory=dict)
