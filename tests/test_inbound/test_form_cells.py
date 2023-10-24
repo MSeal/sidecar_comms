@@ -12,6 +12,7 @@ from sidecar_comms.form_cells.base import (
     Text,
     parse_as_form_cell,
 )
+from sidecar_comms.form_cells.observable import Change, ObservableModel
 from sidecar_comms.inbound import handle_msg
 from sidecar_comms.shell import get_ipython_shell
 
@@ -48,7 +49,7 @@ class TestParseFormCell:
         assert form_cell.model_variable_name == "test"
         assert form_cell.value == datetime(2023, 1, 1, 0, 0, tzinfo=timezone.utc)
         assert form_cell.variable_type == "datetime"
-        assert form_cell.settings == {}
+        assert form_cell.settings == ObservableModel()
         assert isinstance(form_cell, Datetime)
 
     def test_parse_dropdown(self):
@@ -236,7 +237,7 @@ class TestFormCellObservers:
         mock_callback = Mock()
         form_cell.observe(mock_callback)
         form_cell.value = ["b"]
-        mock_callback.assert_called_once_with({"name": "value", "old": ["a"], "new": ["b"]})
+        mock_callback.assert_called_once_with(Change(name="value", old=["a"], new=["b"]))
 
     def test_callback_triggered_on_settings_change(self):
         """Test that a callback is triggered when the form cell settings
@@ -254,11 +255,11 @@ class TestFormCellObservers:
         form_cell.settings.observe(mock_callback)
         form_cell.settings.options = ["a", "b", "x", "y"]
         mock_callback.assert_called_once_with(
-            {
-                "name": "options",
-                "old": ["a", "b", "c"],
-                "new": ["a", "b", "x", "y"],
-            }
+            Change(
+                name="options",
+                old=["a", "b", "c"],
+                new=["a", "b", "x", "y"],
+            )
         )
 
 
