@@ -222,10 +222,12 @@ FormCell = Annotated[model_union, Field(discriminator="input_type")]
 # we don't have any other way to check whether an `input_type` value is valid
 valid_model_input_types = [m.__fields__["input_type"].default for m in model_union.__args__]
 
+FORM_CELL_ADAPTER = TypeAdapter(FormCell)
+
 
 def parse_as_form_cell(data: dict) -> FormCell:
     # check if the input_type is valid before parsing into a model
     # in case we need to overwrite it as "custom"
     if data["input_type"] not in valid_model_input_types:
         data["input_type"] = "custom"
-    return TypeAdapter(FormCell).validate_python(data)
+    return FORM_CELL_ADAPTER.validate_python(data)
