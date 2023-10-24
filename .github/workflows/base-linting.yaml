@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Lint Dockerfile, Shell scripts, YAML
-        uses: github/super-linter@v4
+        uses: github/super-linter@v5
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
