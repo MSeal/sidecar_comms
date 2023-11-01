@@ -87,14 +87,14 @@ class FormCellBase(ObservableModel):
         set_kernel_variable(self.value_variable_name, self.value)
 
     def __repr__(self):
-        props = ", ".join(f"{k}={v!r}" for k, v in self.dict(exclude={"id"}).items())
+        props = ", ".join(f"{k}={v!r}" for k, v in self.model_dump(exclude={"id"}).items())
         return f"<{self.__class__.__name__} {props}>"
 
     def _sync_sidecar(self, change: Change):
         """Send a comm_msg to the sidecar to update the form cell metadata."""
         # not sending `change` through because we're doing a full replace
         # based on the latest state of the model
-        self._comm.send(handler="update_form_cell", body=self.dict())
+        self._comm.send(handler="update_form_cell", body=self.model_dump())
 
     def _on_value_update(self, change: Change) -> None:
         """Update the kernel variable when the .value changes
@@ -105,7 +105,7 @@ class FormCellBase(ObservableModel):
 
     def _ipython_display_(self):
         """Send a message to the sidecar and print the form cell repr."""
-        self._comm.send(handler="display_form_cell", body=self.dict())
+        self._comm.send(handler="display_form_cell", body=self.model_dump())
         print(self.__repr__())
 
     def update(self, data: dict) -> None:
@@ -140,7 +140,7 @@ class Datetime(FormCellBase):
 
     def _sync_sidecar(self, change: Change):
         """Overrides parent class _sync_sidecar() method to use specific datetime string format."""
-        data = self.dict()
+        data = self.model_dump()
         data["value"] = data["value"].strftime("%Y-%m-%dT%H:%M")
         self._comm.send(handler="update_form_cell", body=data)
 

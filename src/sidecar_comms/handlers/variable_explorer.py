@@ -243,7 +243,9 @@ def get_kernel_variables(skip_prefixes: list = None):
         if name.startswith(tuple(skip_prefixes)):
             continue
         variable_model = variable_to_model(name=name, value=value)
-        cleaned_variable_model_dict = {k: json_clean(v) for k, v in variable_model.dict().items()}
+        cleaned_variable_model_dict = {
+            k: json_clean(v) for k, v in variable_model.model_dump().items()
+        }
         variable_data[name] = cleaned_variable_model_dict
     return variable_data
 

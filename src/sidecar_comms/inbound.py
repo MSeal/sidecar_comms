@@ -24,7 +24,7 @@ def inbound_comm(comm, open_msg):
         data = msg["content"]["data"]
         # echo for debugging
         echo_msg = CommMessage(body={"status": "received", "data": data})
-        comm.send(echo_msg.dict())
+        comm.send(echo_msg.model_dump())
 
         try:
             handle_msg(data, comm)
@@ -37,7 +37,7 @@ def inbound_comm(comm, open_msg):
                     "msg": msg,
                 }
             )
-            comm.send(error_msg.dict())
+            comm.send(error_msg.model_dump())
 
     comm.send({"status": "connected", "source": "sidecar_comms"})
 
@@ -53,7 +53,7 @@ def handle_msg(data: dict, comm: Comm) -> None:
             body=variables,
             handler="get_kernel_variables",
         )
-        comm.send(msg.dict())
+        comm.send(msg.model_dump())
 
     if inbound_msg == "rename_kernel_variable":
         if "old_name" in data and "new_name" in data:
@@ -62,17 +62,17 @@ def handle_msg(data: dict, comm: Comm) -> None:
                 body={"status": status},
                 handler="rename_kernel_variable",
             )
-            comm.send(msg.dict())
+            comm.send(msg.model_dump())
 
     if inbound_msg == "update_form_cell":
         form_cell_id = data.pop("form_cell_id")
         form_cell = FORM_CELL_CACHE[form_cell_id]
         form_cell.update(data)
         msg = CommMessage(
-            body=form_cell.dict(),
+            body=form_cell.model_dump(),
             handler="update_form_cell",
         )
-        comm.send(msg.dict())
+        comm.send(msg.model_dump())
 
     if inbound_msg == "create_form_cell":
         # form cell object created from the frontend
@@ -84,10 +84,10 @@ def handle_msg(data: dict, comm: Comm) -> None:
         # and also including the newly-generated form cell model that includes
         # the form cell id (uuid) and any other default properties
         msg = CommMessage(
-            body={"cell_id": cell_id, **form_cell.dict()},
+            body={"cell_id": cell_id, **form_cell.model_dump()},
             handler="register_form_cell",
         )
-        comm.send(msg.dict())
+        comm.send(msg.model_dump())
 
     if inbound_msg == "assign_value_variable":
         form_cell_id = data["form_cell_id"]

@@ -27,7 +27,7 @@ class SidecarComm(Comm, HasTraits):
             target_name=target_name,
             **data,
         )
-        super().send(data=msg.dict())
+        super().send(data=msg.model_dump())
 
     def update_value(self, msg):
         data = msg["content"]["data"]
@@ -57,7 +57,7 @@ class CommManager:
             body={"target": target_name},
             handler="register_comm_target",
         )
-        comm.send(**msg.dict())
+        comm.send(**msg.model_dump())
 
         # if a message with {"value": X} is sent to this comm,
         # update the comm's value attribute
